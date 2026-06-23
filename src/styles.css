@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Light theme (default) ────────────────────────── */
+:root {
+  --c-ink:     230 242 221;   /* #E6F2DD – page background  */
+  --c-panel:   255 255 255;   /* #FFFFFF – card backgrounds */
+  --c-line:    177 211 185;   /* #B1D3B9 – borders          */
+  --c-primary: 101 146 135;   /* #659287 – teal accent      */
+  --c-sage:    136 189 164;   /* #88BDA4 – secondary accent */
+  --c-forest:  29 53 48;      /* #1D3530 – dark text        */
+
+  color-scheme: light;
+  font-family: Inter, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Dark theme (deep forest green) ──────────────── */
+.dark {
+  --c-ink:     26 46 36;      /* #1A2E24 – deep forest bg   */
+  --c-panel:   34 58 44;      /* #223A2C – dark card bg     */
+  --c-line:    58 90 71;      /* #3A5A47 – muted green border */
+  --c-primary: 136 189 164;   /* #88BDA4 – lighter for contrast */
+  --c-sage:    101 146 135;   /* #659287 – secondary accent */
+  --c-forest:  230 242 221;   /* #E6F2DD – light mint text  */
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background: rgb(var(--c-ink));
+  color: rgb(var(--c-forest));
+}
+
+button,
+input {
+  font: inherit;
+}
+
+@media (forced-colors: active) {
+  *,
+  *::before,
+  *::after {
+    forced-color-adjust: none;
+  }
+}
+
+::selection {
+  background: rgb(var(--c-primary));
+  color: rgb(var(--c-panel));
+}
+
+@keyframes drift-one {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(48px, 38px, 0);
+  }
+}
+
+@keyframes drift-two {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-40px, -48px, 0);
+  }
+}
+
+@keyframes float-card {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+.bg-glow-one {
+  animation: drift-one 19s ease-in-out infinite;
+}
+
+.bg-glow-two {
+  animation: drift-two 23s ease-in-out infinite;
+}
+
+.hero-float {
+  animation: float-card 6s ease-in-out infinite;
+}

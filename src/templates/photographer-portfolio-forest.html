@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mara Elen — Photographer</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:       #080e09;
+  --bg2:      #0d1410;
+  --bg3:      #111a12;
+  --bg4:      #162019;
+  --white:    #ffffff;
+  --green:    #2d6a40;
+  --green2:   #3d8a55;
+  --green3:   #52a86c;
+  --cream:    #e8e0cc;
+  --cream2:   #d0c8b4;
+  --cream3:   #b8b09c;
+  --green-lt: rgba(45,106,64,0.12);
+  --green-dim:rgba(45,106,64,0.08);
+  --green-bdr:rgba(45,106,64,0.25);
+  --text:     #e8e4d4;
+  --text2:    #b0ad98;
+  --text3:    #6e6e58;
+  --text4:    #3a3e30;
+  --text5:    #242818;
+  --font-d:   'Cormorant Garamond',Georgia,serif;
+  --font-b:   'DM Sans',system-ui,sans-serif;
+  --r:        14px;
+  --r-lg:     22px;
+}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--font-b);-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1.25rem 3rem;
+  background:rgba(8,14,9,0.88);
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--text4);
+}
+.logo{font-family:var(--font-d);font-size:1.4rem;font-weight:400;letter-spacing:0.08em;color:var(--cream);text-transform:uppercase;}
+.nav-links{display:flex;gap:2rem;list-style:none;}
+.nav-links a{font-size:.78rem;font-weight:500;color:var(--text3);text-decoration:none;letter-spacing:.1em;text-transform:uppercase;transition:color .15s;}
+.nav-links a:hover{color:var(--cream);}
+.nav-right{display:flex;align-items:center;gap:1rem;}
+.nav-avail{display:flex;align-items:center;gap:.45rem;font-size:.72rem;font-weight:500;color:var(--text3);}
+.avail-dot{width:7px;height:7px;border-radius:50%;background:var(--green2);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(45,106,64,0.4)}50%{opacity:.7;box-shadow:0 0 0 6px rgba(45,106,64,0)}}
+.nav-btn{padding:.5rem 1.4rem;background:var(--green);color:var(--cream);font-family:var(--font-b);font-size:.75rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;border-radius:999px;transition:background .15s;}
+.nav-btn:hover{background:var(--green2);}
+
+.hero{min-height:100vh;padding-top:70px;display:grid;grid-template-columns:1fr 1fr;background:var(--bg2);border-bottom:1px solid var(--text4);overflow:hidden;}
+.hero-left{padding:5rem 3.5rem 4rem;display:flex;flex-direction:column;justify-content:center;position:relative;}
+.hero-left::after{content:'';position:absolute;top:0;right:0;bottom:0;width:1px;background:linear-gradient(to bottom,transparent,var(--text4) 20%,var(--text4) 80%,transparent);}
+.hero-tag{display:inline-flex;align-items:center;gap:.5rem;font-size:.68rem;font-weight:600;color:var(--green2);letter-spacing:.14em;text-transform:uppercase;margin-bottom:2.5rem;}
+.hero-tag::before{content:'';display:block;width:24px;height:1.5px;background:var(--green);}
+.hero h1{font-family:var(--font-d);font-size:clamp(3.5rem,6vw,6.5rem);font-weight:300;line-height:.95;letter-spacing:.01em;color:var(--cream);margin-bottom:1rem;}
+.hero h1 em{display:block;font-style:italic;color:var(--text2);font-weight:300;}
+.hero-desc{font-size:.9rem;font-weight:300;color:var(--text2);line-height:1.85;max-width:380px;margin:1.5rem 0 2.5rem;}
+.hero-btns{display:flex;gap:.85rem;flex-wrap:wrap;}
+.btn-solid{padding:.8rem 2rem;background:var(--green);color:var(--cream);font-family:var(--font-b);font-size:.78rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;border-radius:var(--r);transition:background .15s;}
+.btn-solid:hover{background:var(--green2);}
+.btn-outline{padding:.8rem 2rem;background:transparent;color:var(--text2);font-family:var(--font-b);font-size:.78rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;border-radius:var(--r);border:1.5px solid var(--text4);transition:border-color .15s,color .15s;}
+.btn-outline:hover{border-color:var(--green-bdr);color:var(--cream);}
+.hero-right{position:relative;overflow:hidden;background:var(--bg3);display:flex;align-items:flex-end;padding:2rem;}
+.hero-img-ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:.85rem;background:linear-gradient(135deg,var(--bg2) 0%,var(--bg3) 60%,var(--bg4) 100%);}
+.hero-img-ph::before{content:'';position:absolute;inset:0;background:rgba(45,106,64,0.05);}
+.hero-img-ph-icon{font-size:3rem;color:var(--text4);}
+.hero-img-ph-label{font-size:.72rem;color:var(--text3);font-style:italic;font-family:var(--font-d);}
+.hero-float{position:relative;z-index:2;background:rgba(8,14,9,0.85);border:1px solid var(--text4);border-radius:var(--r-lg);padding:1.25rem 1.5rem;display:flex;gap:2rem;backdrop-filter:blur(8px);}
+.hero-stat{display:flex;flex-direction:column;gap:.2rem;}
+.hero-stat-n{font-family:var(--font-d);font-size:2rem;font-weight:400;color:var(--cream);line-height:1;}
+.hero-stat-l{font-size:.65rem;font-weight:500;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;}
+
+.marquee-wrap{background:var(--bg3);padding:.85rem 0;overflow:hidden;border-bottom:1px solid var(--text4);}
+.marquee-track{display:flex;gap:0;animation:scroll 30s linear infinite;width:max-content;}
+.m-item{font-family:var(--font-d);font-size:.9rem;font-style:italic;font-weight:300;color:var(--text4);padding:0 2.5rem;white-space:nowrap;border-right:1px solid var(--text5);}
+.m-item.hi{color:var(--green2);}
+@keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+.swrap{padding:5.5rem 3rem;max-width:1200px;margin:0 auto;}
+.eyebrow{font-size:.65rem;font-weight:600;color:var(--green2);letter-spacing:.18em;text-transform:uppercase;margin-bottom:.85rem;display:flex;align-items:center;gap:.65rem;}
+.eyebrow::before{content:'';display:block;width:18px;height:1.5px;background:var(--green);}
+.s-title{font-family:var(--font-d);font-size:clamp(2.2rem,4vw,3.5rem);font-weight:300;letter-spacing:.01em;color:var(--cream);line-height:1.1;margin-bottom:.5rem;}
+.s-title em{font-style:italic;color:var(--text2);}
+.s-sub{font-size:.88rem;font-weight:300;color:var(--text2);line-height:1.85;max-width:500px;margin-bottom:3rem;}
+
+.gallery-section{background:var(--bg2);border-top:1px solid var(--text4);border-bottom:1px solid var(--text4);}
+.gallery-header{display:flex;align-items:flex-end;justify-content:space-between;padding:3.5rem 3rem 2rem;border-bottom:1px solid var(--text4);}
+.gallery-count{font-size:.75rem;color:var(--text3);font-weight:400;letter-spacing:.06em;}
+.gallery-filters{display:flex;gap:.5rem;}
+.filter-btn{padding:.35rem .9rem;border-radius:999px;font-size:.72rem;font-weight:500;border:1px solid var(--text4);background:transparent;color:var(--text3);cursor:pointer;transition:all .15s;font-family:var(--font-b);letter-spacing:.04em;}
+.filter-btn.active,.filter-btn:hover{background:var(--green);color:var(--cream);border-color:var(--green);}
+
+.gallery-grid{display:grid;grid-template-columns:repeat(12,1fr);grid-auto-rows:72px;gap:3px;padding:3px;}
+.img-cell{overflow:hidden;position:relative;cursor:pointer;background:var(--bg3);}
+.img-cell:hover .cell-overlay{opacity:1;}
+.img-cell:hover .cell-inner{transform:scale(1.04);}
+.cell-inner{width:100%;height:100%;transition:transform .5s ease;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:.4rem;position:relative;}
+.cell-inner::before{content:'';position:absolute;inset:0;background:rgba(45,106,64,0.06);z-index:1;}
+.cell-icon{font-size:.9rem;color:var(--text5);position:relative;z-index:2;}
+.cell-num{font-size:.6rem;color:var(--text5);font-family:var(--font-b);letter-spacing:.08em;position:relative;z-index:2;}
+.cell-overlay{position:absolute;inset:0;background:rgba(8,14,9,0.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4rem;opacity:0;transition:opacity .3s;z-index:3;}
+.cell-overlay-title{font-family:var(--font-d);font-size:1rem;font-style:italic;font-weight:300;color:var(--text);letter-spacing:.04em;}
+.cell-overlay-cat{font-size:.6rem;font-weight:600;color:var(--green2);letter-spacing:.18em;text-transform:uppercase;}
+
+.g1{grid-column:span 5;grid-row:span 6;background:var(--bg3);}
+.g2{grid-column:span 4;grid-row:span 4;background:var(--bg2);}
+.g3{grid-column:span 3;grid-row:span 4;background:var(--bg4);}
+.g4{grid-column:span 4;grid-row:span 2;background:var(--bg2);}
+.g5{grid-column:span 3;grid-row:span 2;background:var(--bg3);}
+.g6{grid-column:span 3;grid-row:span 5;background:var(--bg2);}
+.g7{grid-column:span 6;grid-row:span 5;background:var(--bg3);}
+.g8{grid-column:span 3;grid-row:span 5;background:var(--bg4);}
+.g9{grid-column:span 4;grid-row:span 3;background:var(--bg3);}
+.g10{grid-column:span 4;grid-row:span 3;background:var(--bg2);}
+.g11{grid-column:span 4;grid-row:span 3;background:var(--bg4);}
+.g12{grid-column:span 7;grid-row:span 4;background:var(--bg2);}
+.g13{grid-column:span 5;grid-row:span 4;background:var(--bg3);}
+.g14{grid-column:span 6;grid-row:span 3;background:var(--bg4);}
+.g15{grid-column:span 6;grid-row:span 3;background:var(--bg2);}
+.g1 .cell-inner::before{background:rgba(45,106,64,0.08);}
+.g7 .cell-inner::before{background:rgba(82,168,108,0.07);}
+.g12 .cell-inner::before{background:rgba(45,106,64,0.05);}
+
+.about-sec{border-top:1px solid var(--text4);}
+.about-inner{display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:center;}
+.about-img-wrap{position:relative;}
+.about-img-ph{width:100%;aspect-ratio:3/4;border-radius:var(--r-lg);background:linear-gradient(160deg,var(--bg2) 0%,var(--bg3) 50%,var(--bg4) 100%);border:1px solid var(--text4);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:.85rem;}
+.about-img-ph-icon{font-size:3rem;color:var(--text4);}
+.about-img-ph-label{font-size:.72rem;color:var(--text3);font-style:italic;font-family:var(--font-d);}
+.about-badge{position:absolute;bottom:-1rem;right:-1rem;background:var(--green);color:var(--cream);border-radius:var(--r);padding:1rem 1.5rem;box-shadow:0 8px 28px rgba(45,106,64,0.25);}
+.about-badge-n{font-family:var(--font-d);font-size:2rem;font-weight:400;line-height:1;}
+.about-badge-l{font-size:.65rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;opacity:.75;margin-top:.2rem;}
+.about-quote{font-family:var(--font-d);font-size:1.2rem;font-style:italic;font-weight:300;color:var(--cream);line-height:1.65;padding:1.25rem 1.5rem;border-left:2px solid var(--green);background:rgba(45,106,64,0.08);border-radius:0 var(--r) var(--r) 0;margin:1.5rem 0;}
+.about-text p{font-size:.88rem;color:var(--text2);line-height:1.9;font-weight:300;margin-bottom:.9rem;}
+.about-stats{display:flex;gap:2rem;margin-top:2rem;padding-top:1.75rem;border-top:1px solid var(--text4);}
+.ast-n{font-family:var(--font-d);font-size:2.2rem;font-weight:400;color:var(--cream);line-height:1;}
+.ast-l{font-size:.65rem;font-weight:500;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-top:.3rem;}
+
+.services-sec{background:var(--bg3);border-top:1px solid var(--text4);}
+.services-inner{max-width:1200px;margin:0 auto;padding:5.5rem 3rem;}
+.services-inner .eyebrow::before{background:var(--green);}
+.svc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5px;background:var(--text4);}
+.svc{padding:2.5rem;background:var(--bg3);transition:background .2s;}
+.svc:hover{background:var(--bg4);}
+.svc-num{font-size:.65rem;color:var(--green2);letter-spacing:.12em;margin-bottom:1.5rem;font-family:var(--font-b);font-weight:600;}
+.svc h3{font-family:var(--font-d);font-size:1.5rem;font-weight:300;font-style:italic;color:var(--cream);margin-bottom:.75rem;line-height:1.25;}
+.svc p{font-size:.82rem;color:var(--text2);line-height:1.8;font-weight:300;}
+.svc-tag{display:inline-block;margin-top:1.5rem;font-size:.68rem;font-weight:600;color:var(--green2);letter-spacing:.1em;text-transform:uppercase;}
+
+.testi-sec{border-top:1px solid var(--text4);}
+.testi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;}
+.testi-card{padding:2rem;border-radius:var(--r-lg);border:1px solid var(--text4);background:var(--bg2);display:flex;flex-direction:column;gap:1.25rem;transition:border-color .2s,box-shadow .2s;}
+.testi-card:hover{border-color:var(--green-bdr);box-shadow:0 4px 24px rgba(45,106,64,0.1);}
+.testi-quote-mark{font-family:var(--font-d);font-size:3rem;font-weight:300;color:var(--green);line-height:.5;}
+.testi-text{font-family:var(--font-d);font-size:1rem;font-style:italic;color:var(--text2);line-height:1.75;}
+.testi-author{display:flex;align-items:center;gap:.75rem;margin-top:auto;padding-top:1rem;border-top:1px solid var(--text4);}
+.testi-av{width:38px;height:38px;border-radius:50%;background:var(--bg3);border:1px solid var(--text4);display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:600;color:var(--cream);flex-shrink:0;}
+.testi-name{font-size:.82rem;font-weight:600;color:var(--text);}
+.testi-role{font-size:.7rem;color:var(--text3);}
+
+.contact-sec{border-top:1px solid var(--text4);}
+.contact-inner{display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:start;}
+.contact-left h2{font-family:var(--font-d);font-size:clamp(2.8rem,5vw,5rem);font-weight:300;line-height:.95;letter-spacing:.01em;color:var(--cream);margin-bottom:1.5rem;}
+.contact-left h2 em{display:block;font-style:italic;color:var(--text2);}
+.contact-left p{font-size:.88rem;color:var(--text2);line-height:1.85;font-weight:300;max-width:360px;}
+.contact-links{display:flex;flex-direction:column;gap:.75rem;margin-top:2.5rem;}
+.c-link{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.4rem;border-radius:var(--r);border:1px solid var(--text4);background:var(--bg2);text-decoration:none;transition:border-color .15s,background .15s;}
+.c-link:hover{border-color:var(--green-bdr);background:var(--bg3);}
+.c-link-l{display:flex;flex-direction:column;gap:.2rem;}
+.c-lbl{font-size:.65rem;font-weight:600;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;}
+.c-val{font-size:.88rem;font-weight:500;color:var(--text);}
+.c-arr{font-size:1rem;color:var(--text3);transition:transform .15s,color .15s;}
+.c-link:hover .c-arr{transform:translate(3px,-3px);color:var(--cream);}
+.contact-form-wrap{background:var(--bg2);border:1px solid var(--text4);border-radius:var(--r-lg);padding:2rem;}
+.form-title{font-family:var(--font-d);font-size:1.3rem;font-weight:300;font-style:italic;color:var(--cream);margin-bottom:1.5rem;}
+.form-group{display:flex;flex-direction:column;gap:.4rem;margin-bottom:.85rem;}
+.form-group label{font-size:.68rem;font-weight:600;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;}
+.form-group input,.form-group select,.form-group textarea{padding:.75rem 1rem;border:1.5px solid var(--text4);border-radius:var(--r);font-family:var(--font-b);font-size:.85rem;color:var(--text);background:var(--bg3);outline:none;transition:border-color .15s;}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--green);background:var(--bg4);}
+.form-group select option{background:var(--bg3);}
+.form-group textarea{resize:vertical;min-height:90px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:.85rem;}
+.form-submit{width:100%;padding:.9rem;background:var(--green);color:var(--cream);font-family:var(--font-b);font-size:.82rem;font-weight:600;border:none;border-radius:var(--r);cursor:pointer;margin-top:.5rem;transition:background .15s;letter-spacing:.06em;text-transform:uppercase;}
+.form-submit:hover{background:var(--green2);}
+.form-note{font-size:.7rem;color:var(--text3);text-align:center;margin-top:.75rem;}
+
+footer{background:var(--bg);border-top:1px solid var(--text5);}
+.footer-inner{max-width:1200px;margin:0 auto;padding:3rem;display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:3rem;padding-bottom:2.5rem;border-bottom:1px solid var(--text5);}
+.footer-brand-name{font-family:var(--font-d);font-size:1.1rem;font-weight:300;letter-spacing:.1em;text-transform:uppercase;color:var(--cream);margin-bottom:.75rem;}
+.footer-brand p{font-size:.78rem;color:var(--text3);line-height:1.75;font-weight:300;}
+.f-col h4{font-size:.65rem;font-weight:600;color:var(--text4);letter-spacing:.14em;text-transform:uppercase;margin-bottom:1rem;}
+.f-col ul{list-style:none;display:flex;flex-direction:column;gap:.6rem;}
+.f-col ul li a{font-size:.82rem;color:var(--text3);text-decoration:none;transition:color .15s;}
+.f-col ul li a:hover{color:var(--cream);}
+.footer-bottom{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:1.5rem 3rem;}
+.footer-bottom p{font-size:.72rem;color:var(--text4);}
+.footer-bottom span{font-size:.72rem;color:var(--green2);}
+
+#lightbox{display:none;position:fixed;inset:0;z-index:999;background:rgba(4,8,5,0.96);align-items:center;justify-content:center;flex-direction:column;gap:1.5rem;}
+#lightbox.open{display:flex;}
+.lb-box{max-width:700px;width:90%;aspect-ratio:3/2;background:var(--bg2);border:1px solid var(--text4);border-radius:var(--r-lg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:.85rem;position:relative;}
+.lb-ph-icon{font-size:3rem;color:var(--text4);}
+.lb-ph-label{font-size:.72rem;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;font-family:var(--font-b);}
+.lb-title{font-family:var(--font-d);font-size:1.25rem;font-style:italic;font-weight:300;color:var(--cream);}
+.lb-close{position:absolute;top:1.25rem;right:1.25rem;width:38px;height:38px;border-radius:50%;border:1px solid var(--text4);background:transparent;color:var(--text3);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .15s,color .15s;}
+.lb-close:hover{border-color:var(--green);color:var(--cream);}
+.lb-nav{display:flex;gap:.85rem;}
+.lb-btn{padding:.55rem 1.5rem;border-radius:999px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:rgba(255,255,255,0.4);font-family:var(--font-b);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:border-color .15s,color .15s;}
+.lb-btn:hover{border-color:var(--green-bdr);color:var(--text);}
+
+@media(max-width:900px){
+  nav{padding:1rem 1.5rem;}.nav-links{display:none;}
+  .hero{grid-template-columns:1fr;}
+  .hero-right{height:55vw;min-height:240px;}
+  .hero-left{padding:3.5rem 1.5rem 3rem;}
+  .swrap{padding:4rem 1.5rem;}
+  .gallery-header{flex-direction:column;align-items:flex-start;gap:1rem;padding:2.5rem 1.5rem;}
+  .gallery-filters{flex-wrap:wrap;}
+  .gallery-grid{grid-auto-rows:55px;}
+  .about-inner,.contact-inner{grid-template-columns:1fr;}
+  .about-badge{position:static;margin-top:1rem;}
+  .svc-grid,.testi-grid{grid-template-columns:1fr;}
+  .footer-inner{grid-template-columns:1fr;padding:2.5rem 1.5rem;}
+  .footer-bottom{flex-direction:column;gap:.5rem;text-align:center;padding:1.25rem 1.5rem;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">Mara Elen</div>
+  <ul class="nav-links">
+    <li><a href="#gallery">Gallery</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#services">Services</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <div class="nav-right">
+    <div class="nav-avail"><span class="avail-dot"></span> Available for bookings</div>
+    <a href="#contact" class="nav-btn">Book Session</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-left">
+    <p class="hero-tag">Documentary &amp; Portrait Photographer</p>
+    <h1>Still.<br>True.<br><em>Alive.</em></h1>
+    <p class="hero-desc">I capture the quiet moments between moments — the ones that feel most human. Based between Copenhagen and Dhaka, shooting portrait, documentary, and editorial work worldwide.</p>
+    <div class="hero-btns">
+      <a href="#gallery" class="btn-solid">View Gallery</a>
+      <a href="#contact" class="btn-outline">Book a Session</a>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="hero-img-ph">
+      <span class="hero-img-ph-icon">▣</span>
+      <span class="hero-img-ph-label">Hero image</span>
+    </div>
+    <div class="hero-float">
+      <div class="hero-stat"><div class="hero-stat-n">14</div><div class="hero-stat-l">Years shooting</div></div>
+      <div class="hero-stat"><div class="hero-stat-n">500+</div><div class="hero-stat-l">Sessions</div></div>
+      <div class="hero-stat"><div class="hero-stat-n">32</div><div class="hero-stat-l">Countries</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="marquee-wrap">
+  <div class="marquee-track">
+    <span class="m-item hi">Portrait</span><span class="m-item">Documentary</span><span class="m-item hi">Editorial</span><span class="m-item">Landscape</span><span class="m-item hi">Fine Art</span><span class="m-item">Street</span><span class="m-item hi">Commercial</span><span class="m-item">Still Life</span><span class="m-item hi">Weddings</span><span class="m-item">Architecture</span>
+    <span class="m-item hi">Portrait</span><span class="m-item">Documentary</span><span class="m-item hi">Editorial</span><span class="m-item">Landscape</span><span class="m-item hi">Fine Art</span><span class="m-item">Street</span><span class="m-item hi">Commercial</span><span class="m-item">Still Life</span><span class="m-item hi">Weddings</span><span class="m-item">Architecture</span>
+  </div>
+</div>
+
+<div class="gallery-section" id="gallery">
+  <div class="gallery-header">
+    <div>
+      <div class="eyebrow">Selected work</div>
+      <h2 class="s-title">The <em>Collection</em></h2>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1rem;">
+      <p class="gallery-count">15 images — 2022–2026</p>
+      <div class="gallery-filters">
+        <button class="filter-btn active">All</button>
+        <button class="filter-btn">Portrait</button>
+        <button class="filter-btn">Documentary</button>
+        <button class="filter-btn">Editorial</button>
+        <button class="filter-btn">Landscape</button>
+      </div>
+    </div>
+  </div>
+  <div class="gallery-grid">
+    <div class="img-cell g1" onclick="openLB('Dawn Portrait','Portrait')"><div class="cell-inner"><span class="cell-icon">▣</span><span class="cell-num">01</span></div><div class="cell-overlay"><span class="cell-overlay-title">Dawn Portrait</span><span class="cell-overlay-cat">Portrait</span></div></div>
+    <div class="img-cell g2" onclick="openLB('Harbour Mist','Documentary')"><div class="cell-inner"><span class="cell-icon">▣</span><span class="cell-num">02</span></div><div class="cell-overlay"><span class="cell-overlay-title">Harbour Mist</span><span class="cell-overlay-cat">Documentary</span></div></div>
+    <div class="img-cell g3" onclick="openLB('Glass &amp; Light','Editorial')"><div class="cell-inner"><span class="cell-icon">▣</span><span class="cell-num">03</span></div><div class="cell-overlay"><span class="cell-overlay-title">Glass &amp; Light</span><span class="cell-overlay-cat">Editorial</span></div></div>
+    <div class="img-cell g4" onclick="openLB('Tidal','Landscape')"><div class="cell-inner"><span class="cell-icon">▣</span><span class="cell-num">04</span></div><div class="cell-overlay"><span class="cell-overlay-title">Tidal</span><span class="cell-overlay-cat">Landscape</span></div></div>
+    <div class="img-cell g5" onclick="openLB('Solitude','Fine Art')"><div class="cell-inner"><span class="cell-icon">▣</span><span class="cell-num">05</span></div><div class="cell-overlay"><span class="cell-overlay-title">Solitude</span><span class="cell-overlay-cat">Fine Art</span></div></div>
+    <div class="img-cell g6" onclick="openLB('The Fisherman','Documentary')"><div class="cell-inner"><span class="cell-icon">▣</span><span class="cell-num">06</span></div><div class="cell-overlay"><span class="cell-overlay-title">The Fisherman</span><span class="cell-overlay-cat">Documentary</span></div></div>
+    <div class="img-cell g7" onclick="openLB('Afternoon Study','Portrait')"><div class="cell-inner"><span class="cell-icon">▣</span><span class="cell-num">07</span></div><div class="cell-overlay"><span class="cell-overlay-title">Afternoon Study</span><span class="cell-overlay-cat">Portrait</span></div></div>
+    <div class="img-cell g8" onclick="openLB('Salt Flats','Landscape')"><div class="cell-inner"><span class="cell-icon">▣</span><span class="cell-num">08</span></div><div class="cell-overlay"><span class="cell-overlay-title">Salt Flats</span><span class="cell-overlay-cat">Landscape</span></div></div>
+    <div class="img-cell g9" onclick="openLB('Urban Quiet','Street')"><div class="cell-inner"><span class="cell-icon">▣</span><span class="cell-num">09</span></div><div class="cell-overlay"><span class="cell-overlay-title">Urban Quiet</span><span class="cell-overlay-cat">Street</span></div></div>
+    <div class="img-cell g10" onclick="openLB('Bloom','Still Life')"><div class="cell-inner"><span class="cell-icon">▣</span><span class="cell-num">10</span></div><div class="cell-overlay"><span class="cell-overlay-title">Bloom</span><span class="cell-overlay-cat">Still Life</span></div></div>
+    <div class="img-cell g11" onclick="openLB('The Last Light','Fine Art')"><div class="cell-inner"><span class="cell-icon">▣</span><span class="cell-num">11</span></div><div class="cell-overlay"><span class="cell-overlay-title">The Last Light</span><span class="cell-overlay-cat">Fine Art</span></div></div>
+    <div class="img-cell g12" onclick="openLB('Market Day','Documentary')"><div class="cell-inner"><span class="cell-icon">▣</span><span class="cell-num">12</span></div><div class="cell-overlay"><span class="cell-overlay-title">Market Day</span><span class="cell-overlay-cat">Documentary</span></div></div>
+    <div class="img-cell g13" onclick="openLB('Reflection','Editorial')"><div class="cell-inner"><span class="cell-icon">▣</span><span class="cell-num">13</span></div><div class="cell-overlay"><span class="cell-overlay-title">Reflection</span><span class="cell-overlay-cat">Editorial</span></div></div>
+    <div class="img-cell g14" onclick="openLB('Winter Coast','Landscape')"><div class="cell-inner"><span class="cell-icon">▣</span><span class="cell-num">14</span></div><div class="cell-overlay"><span class="cell-overlay-title">Winter Coast</span><span class="cell-overlay-cat">Landscape</span></div></div>
+    <div class="img-cell g15" onclick="openLB('Between Breaths','Fine Art')"><div class="cell-inner"><span class="cell-icon">▣</span><span class="cell-num">15</span></div><div class="cell-overlay"><span class="cell-overlay-title">Between Breaths</span><span class="cell-overlay-cat">Fine Art</span></div></div>
+  </div>
+</div>
+
+<div class="about-sec" id="about">
+  <div class="swrap">
+    <div class="about-inner">
+      <div class="about-img-wrap">
+        <div class="about-img-ph"><div class="about-img-ph-icon">◉</div><p class="about-img-ph-label">Your photo here</p></div>
+        <div class="about-badge"><div class="about-badge-n">500+</div><div class="about-badge-l">Sessions worldwide</div></div>
+      </div>
+      <div class="about-text">
+        <div class="eyebrow">About</div>
+        <h2 class="s-title">A photographer who<br><em>listens before she looks.</em></h2>
+        <div class="about-quote">"Photography isn't about what you see — it's about what you feel standing in a place no one else noticed."</div>
+        <p>I'm Mara Elen — a documentary and portrait photographer based between Copenhagen and Dhaka. I've spent 14 years searching for the image that exists just before or just after the obvious one.</p>
+        <p>My work has been published in The Guardian, Foam Magazine, and exhibited across Scandinavia and South Asia. I shoot on medium format film and digital, and develop all my own black-and-white prints.</p>
+        <p>Every engagement starts with a conversation. I don't pick up the camera until I know what we're trying to say together.</p>
+        <div class="about-stats">
+          <div><div class="ast-n">14</div><div class="ast-l">Years active</div></div>
+          <div><div class="ast-n">32</div><div class="ast-l">Countries</div></div>
+          <div><div class="ast-n">8</div><div class="ast-l">Publications</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="services-sec" id="services">
+  <div class="services-inner">
+    <div class="eyebrow">What I offer</div>
+    <h2 class="s-title">Services &amp; <em>Pricing</em></h2>
+    <div class="svc-grid">
+      <div class="svc"><p class="svc-num">I</p><h3>Portrait Sessions</h3><p>Individual, couple, and family portraits. Studio or on-location. A two-hour session designed around who you actually are, not a pose.</p><span class="svc-tag">From $320 / session</span></div>
+      <div class="svc"><p class="svc-num">II</p><h3>Editorial &amp; Commercial</h3><p>Magazine spreads, campaign work, and brand storytelling. I bring the same care and intention to commercial projects as to personal work.</p><span class="svc-tag">Custom quote</span></div>
+      <div class="svc"><p class="svc-num">III</p><h3>Documentary Projects</h3><p>Long-form storytelling for NGOs, publications, and personal projects. Available for multi-day, travel, and international assignments.</p><span class="svc-tag">Day rate available</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="testi-sec">
+  <div class="swrap">
+    <div class="eyebrow">Kind words</div>
+    <h2 class="s-title">What clients <em>say</em></h2>
+    <p class="s-sub">From portrait clients to editorial directors — a few words from people I've worked with.</p>
+    <div class="testi-grid">
+      <div class="testi-card"><div class="testi-quote-mark">"</div><div class="testi-text">Mara has a rare ability to make you forget the camera exists. Our portraits felt genuinely alive — like she caught us mid-thought, in the best way.</div><div class="testi-author"><div class="testi-av">LK</div><div><div class="testi-name">Lena K.</div><div class="testi-role">Portrait client, Copenhagen</div></div></div></div>
+      <div class="testi-card"><div class="testi-quote-mark">"</div><div class="testi-text">We hired Mara for a three-week documentary project in Bangladesh. Her images were published in Foam Magazine and changed how we told our story. Irreplaceable.</div><div class="testi-author"><div class="testi-av">TS</div><div><div class="testi-name">Thomas S.</div><div class="testi-role">Creative Director, NGO</div></div></div></div>
+      <div class="testi-card"><div class="testi-quote-mark">"</div><div class="testi-text">The editorial shoot exceeded every brief we gave her. She brought her own vision while respecting ours. We've booked her three times since and will again.</div><div class="testi-author"><div class="testi-av">AM</div><div><div class="testi-name">Anna M.</div><div class="testi-role">Photo Editor, Scandinavian Magazine</div></div></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="contact-sec" id="contact">
+  <div class="swrap">
+    <div class="contact-inner">
+      <div class="contact-left">
+        <div class="eyebrow">Get in touch</div>
+        <h2>Let's create<br><em>something real.</em></h2>
+        <p>Available for portrait sessions, editorial assignments, and documentary projects. I respond to all enquiries within 48 hours.</p>
+        <div class="contact-links">
+          <a href="mailto:hello@maraelen.com" class="c-link"><div class="c-link-l"><span class="c-lbl">Email</span><span class="c-val">hello@maraelen.com</span></div><span class="c-arr">↗</span></a>
+          <a href="https://instagram.com" target="_blank" class="c-link"><div class="c-link-l"><span class="c-lbl">Instagram</span><span class="c-val">@maraelen.photo</span></div><span class="c-arr">↗</span></a>
+          <a href="tel:+4512345678" class="c-link"><div class="c-link-l"><span class="c-lbl">Phone</span><span class="c-val">+45 12 34 56 78</span></div><span class="c-arr">↗</span></a>
+          <div class="c-link"><div class="c-link-l"><span class="c-lbl">Based in</span><span class="c-val">Copenhagen, DK · Dhaka, BD</span></div><span class="c-arr">•</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="contact-form-wrap">
+          <div class="form-title">Send an enquiry</div>
+          <div class="form-row">
+            <div class="form-group"><label>First Name</label><input type="text" placeholder="Lena"></div>
+            <div class="form-group"><label>Last Name</label><input type="text" placeholder="Koch"></div>
+          </div>
+          <div class="form-group"><label>Email</label><input type="email" placeholder="lena@email.com"></div>
+          <div class="form-group"><label>Type of project</label><select><option>Select a type</option><option>Portrait Session</option><option>Editorial / Commercial</option><option>Documentary Project</option><option>Wedding</option><option>Other</option></select></div>
+          <div class="form-group"><label>Message</label><textarea placeholder="Tell me about your project, timeline, and vision..."></textarea></div>
+          <button class="form-submit">Send Enquiry →</button>
+          <p class="form-note">I reply within 48 hours.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand"><div class="footer-brand-name">Mara Elen</div><p>Documentary &amp; portrait photographer based between Copenhagen and Dhaka. Available worldwide for editorial, commercial, and personal projects.</p></div>
+    <div class="f-col"><h4>Navigate</h4><ul><li><a href="#gallery">Gallery</a></li><li><a href="#about">About</a></li><li><a href="#services">Services</a></li><li><a href="#contact">Contact</a></li></ul></div>
+    <div class="f-col"><h4>Contact</h4><ul><li><a href="mailto:hello@maraelen.com">hello@maraelen.com</a></li><li><a href="#">@maraelen.photo</a></li><li><a href="#">Copenhagen · Dhaka</a></li><li><a href="#">Available worldwide</a></li></ul></div>
+  </div>
+  <div class="footer-bottom"><p>© 2026 Mara Elen Photography. All rights reserved.</p><span>Available for bookings …</span></div>
+</footer>
+
+<div id="lightbox" onclick="closeLB(event)">
+  <div class="lb-box" onclick="event.stopPropagation()">
+    <button class="lb-close" onclick="closeLB()">×</button>
+    <div class="lb-ph-icon">▣</div>
+    <div class="lb-ph-label" id="lb-cat">Category</div>
+    <div class="lb-title" id="lb-title">Title</div>
+  </div>
+  <div class="lb-nav">
+    <button class="lb-btn" onclick="closeLB()">← Back to gallery</button>
+    <button class="lb-btn" onclick="closeLB()">Enquire about this shoot →</button>
+  </div>
+</div>
+
+<script>
+function openLB(title,cat){document.getElementById('lb-title').textContent=title;document.getElementById('lb-cat').textContent=cat+' · placeholder';document.getElementById('lightbox').classList.add('open');document.body.style.overflow='hidden';}
+function closeLB(e){if(e&&e.target!==document.getElementById('lightbox'))return;document.getElementById('lightbox').classList.remove('open');document.body.style.overflow='';}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLB();});
+document.querySelectorAll('.filter-btn').forEach(btn=>{btn.addEventListener('click',()=>{document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');});});
+</script>
+</body>
+</html>
