@@ -72,11 +72,19 @@ export function SignupPortal() {
 
   useEffect(() => () => { if (checkTimer.current) clearTimeout(checkTimer.current); }, []);
 
+  function step1Errors(): string[] {
+    const errs: string[] = [];
+    if (form.name.trim().length <= 1) errs.push('Enter your full name');
+    if (!form.email.includes('@')) errs.push('Enter a valid email address');
+    if (subdomainError(form.subdomain)) errs.push(subdomainError(form.subdomain)!);
+    if (subStatus === 'checking') errs.push('Wait for subdomain check to finish');
+    if (subStatus === 'taken') errs.push('That subdomain is already taken');
+    if (subStatus === 'idle' && !subdomainError(form.subdomain) && form.subdomain.length >= 3) errs.push('Wait for subdomain check');
+    return errs;
+  }
+
   function step1Valid() {
-    return form.name.trim().length > 1
-      && form.email.includes('@')
-      && !subdomainError(form.subdomain)
-      && subStatus === 'available';
+    return step1Errors().length === 0;
   }
 
   function step2Valid() {
@@ -257,11 +265,25 @@ export function SignupPortal() {
 
               {error && <ErrorBanner message={error} />}
 
+              {!step1Valid() && (form.name || form.email || form.subdomain) && (
+                <ul className="space-y-1">
+                  {step1Errors().map((e) => (
+                    <li key={e} className="flex items-center gap-1.5 text-xs text-amber-600">
+                      <span>›</span>{e}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
               <button
                 type="button"
-                onClick={() => setStep(2)}
-                disabled={!step1Valid()}
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-forest to-primary px-5 text-sm font-semibold text-panel transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => { if (step1Valid()) setStep(2); }}
+                className={[
+                  'inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold text-panel transition',
+                  step1Valid()
+                    ? 'bg-gradient-to-br from-forest to-primary hover:brightness-110 cursor-pointer'
+                    : 'bg-forest/30 cursor-not-allowed',
+                ].join(' ')}
               >
                 Next
                 <ArrowRight size={16} />
