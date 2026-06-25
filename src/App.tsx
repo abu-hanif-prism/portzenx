@@ -5,6 +5,7 @@ import { Footer } from './components/Footer';
 import { Hero } from './components/Hero';
 import { Navbar } from './components/Navbar';
 import { Pricing, PricingPage } from './components/Pricing';
+import { SignupPortal } from './components/SignupPortal';
 import { TemplateDetail, Templates, TopTemplates } from './components/Templates';
 import { whatsappNumber } from './lib/supabase';
 import { usePortZenStore } from './store/usePortZenStore';
@@ -24,6 +25,7 @@ function App() {
   const templateId = path.startsWith('/templates/') ? decodeURIComponent(path.replace('/templates/', '')) : undefined;
   const isTemplateCatalog = path === '/templates';
   const isEditPortal = path === '/edit';
+  const isSignupPortal = path === '/start';
   const isPricingPage = path === '/pricing';
   const isAdminPortal = path === '/admin';
 
@@ -36,8 +38,10 @@ function App() {
           <AdminPortal />
         ) : isEditPortal ? (
           <EditPortal />
+        ) : isSignupPortal ? (
+          <SignupPortal />
         ) : templateId ? (
-          <TemplateDetail templateId={templateId} whatsappHref={whatsappHref} />
+          <TemplateDetail templateId={templateId} />
         ) : isTemplateCatalog ? (
           <Templates />
         ) : isPricingPage ? (

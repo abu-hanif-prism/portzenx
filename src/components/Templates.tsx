@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { ArrowLeft, ArrowRight, ExternalLink, MessageCircle, MonitorSmartphone, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ExternalLink, MonitorSmartphone, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { TEMPLATE_REGISTRY } from '../templates/registry';
 import { useTemplate, useTemplates } from '../hooks/useTemplates';
@@ -46,7 +46,6 @@ function useBlobUrl(previewUrl: string | undefined): string | undefined {
 
 interface TemplateDetailProps {
   templateId: string;
-  whatsappHref: string;
 }
 
 const filters: TemplateFilter[] = ['All', 'Developer', 'Designer', 'Medical', 'Student', 'Creative'];
@@ -147,13 +146,10 @@ export function Templates() {
   );
 }
 
-export function TemplateDetail({ templateId, whatsappHref }: TemplateDetailProps) {
+export function TemplateDetail({ templateId }: TemplateDetailProps) {
   const templateQuery = useTemplate(templateId);
   const template = templateQuery.data;
   const blobUrl = useBlobUrl(template?.preview_url);
-  const buyHref = template
-    ? `${whatsappHref}%0A%0ATemplate:%20${encodeURIComponent(template.name)}`
-    : whatsappHref;
 
   function openPreview() {
     if (blobUrl) window.open(blobUrl, '_blank', 'noreferrer');
@@ -217,13 +213,11 @@ export function TemplateDetail({ templateId, whatsappHref }: TemplateDetailProps
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <a
-                href={buyHref}
-                target="_blank"
-                rel="noreferrer"
+                href={`/start?template=${encodeURIComponent(template.id)}`}
                 className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-forest to-primary px-5 py-3.5 text-sm font-semibold text-panel transition hover:brightness-110"
               >
-                Buy this template
-                <MessageCircle size={17} />
+                <Sparkles size={17} />
+                Get this template
               </a>
               <button
                 type="button"

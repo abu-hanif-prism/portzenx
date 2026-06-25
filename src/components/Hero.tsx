@@ -1,4 +1,4 @@
-import { Grid2X2, MessageCircle } from 'lucide-react';
+import { Grid2X2, Sparkles } from 'lucide-react';
 
 interface HeroProps {
   whatsappHref: string;
@@ -35,13 +35,11 @@ export function Hero({ whatsappHref }: HeroProps) {
               <Grid2X2 size={18} />
             </a>
             <a
-              href={whatsappHref}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-[13px] bg-[#25D366] px-6 py-3.5 text-sm font-bold text-[#06281A] transition hover:-translate-y-0.5 hover:brightness-110"
+              href="/start"
+              className="inline-flex items-center gap-2 rounded-[13px] border border-primary/50 bg-primary/10 px-6 py-3.5 text-sm font-semibold text-primary transition hover:-translate-y-0.5 hover:bg-primary/15"
             >
-              <MessageCircle size={18} />
-              WhatsApp CTA
+              <Sparkles size={18} />
+              Create My Portfolio
             </a>
           </div>
         </div>

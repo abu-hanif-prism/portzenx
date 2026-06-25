@@ -18,11 +18,12 @@ export function EditPortal() {
 
   const generateToken = useMutation({
     mutationFn: async ({ customerId, password }: PortalForm): Promise<GenerateTokenResponse> => {
-      const { data, error } = await supabase.functions.invoke<GenerateTokenResponse>('generate-token', {
+      const { data, error } = await supabase.functions.invoke<GenerateTokenResponse & { error?: string }>('generate-token', {
         body: { customerId, password },
       });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       if (!data?.magicLink) throw new Error('No magic link returned.');
       return data;
     },
