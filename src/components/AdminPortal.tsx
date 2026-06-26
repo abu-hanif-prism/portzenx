@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, Check, Copy, DollarSign,
   Edit2, Eye, EyeOff, LayoutTemplate, Link2, Plus,
-  RefreshCw, Save, Search, Shield, Upload, Users, X,
+  RefreshCw, Save, Search, Shield, Trash2, Upload, Users, X,
 } from 'lucide-react';
 import { isSupabaseConfigured, supabase, supabaseAdmin } from '../lib/supabase';
 import type { Template, TemplateCategory } from '../types';
@@ -416,6 +416,15 @@ function AdminTemplates() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-templates'] }),
   });
 
+  const deleteTemplate = useMutation({
+    mutationFn: async (id: string) => {
+      if (!supabaseAdmin) throw new Error('Admin client not configured');
+      const { error } = await supabaseAdmin!.from('templates').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-templates'] }),
+  });
+
   return (
     <div>
       <div className="mb-4 flex items-center gap-3">
@@ -494,6 +503,20 @@ function AdminTemplates() {
                     </button>
                   </td>
                   <td className="px-3 py-3.5 text-xs text-forest/50">{fmtDate(t.created_at)}</td>
+                  <td className="py-3.5 pr-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm(`Delete "${t.name}"? This cannot be undone.`)) {
+                          deleteTemplate.mutate(t.id);
+                        }
+                      }}
+                      className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-red-400 transition hover:bg-red-50 hover:text-red-600"
+                    >
+                      <Trash2 size={13} />
+                      Remove
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
