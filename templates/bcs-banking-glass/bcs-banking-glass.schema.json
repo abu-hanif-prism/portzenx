@@ -1,0 +1,134 @@
+{
+  "sections": [
+    {
+      "id": "hero",
+      "label": "Hero & Identity",
+      "fields": [
+        {"key":"logo_text","type":"text","label":"Nav / Logo Name","source":"flat"},
+        {"key":"hero_eyebrow","type":"text","label":"Hero Tagline (badge)","source":"flat"},
+        {"key":"hero_name","type":"text","label":"Name (line 1)","source":"flat"},
+        {"key":"hero_name_italic","type":"text","label":"Name (line 2, italic)","source":"flat"},
+        {"key":"hero_subtitle","type":"text","label":"Hero Subtitle","source":"flat"},
+        {"key":"hero_cta1_label","type":"text","label":"Primary Button Label","source":"flat"},
+        {"key":"hero_cta1_href","type":"link","label":"Primary Button Link","source":"flat"},
+        {"key":"hero_cta2_label","type":"text","label":"Secondary Button Label","source":"flat"},
+        {"key":"hero_cta2_href","type":"link","label":"Secondary Button Link","source":"flat"},
+        {"key":"stats","type":"repeater","label":"Hero Stats","source":"flat","items":[
+          {"key":"value","type":"text","label":"Value"},
+          {"key":"label","type":"text","label":"Label"}
+        ]}
+      ]
+    },
+    {
+      "id": "highlights",
+      "label": "Highlight Strip",
+      "fields": [
+        {"key":"exam_status","type":"repeater","label":"Highlight Cards","source":"extra","items":[
+          {"key":"icon","type":"text","label":"Icon (emoji)"},
+          {"key":"name","type":"text","label":"Title"},
+          {"key":"status","type":"text","label":"Status"},
+          {"key":"desc","type":"text","label":"Detail"}
+        ]}
+      ]
+    },
+    {
+      "id": "experience",
+      "label": "Experience",
+      "fields": [
+        {"key":"experience","type":"repeater","label":"Experience","source":"extra","items":[
+          {"key":"role","type":"text","label":"Role"},
+          {"key":"org","type":"text","label":"Organization"},
+          {"key":"tag","type":"text","label":"Tag"},
+          {"key":"desc","type":"textarea","label":"Description"},
+          {"key":"bullets","type":"textarea","label":"Achievements (one per line)"},
+          {"key":"date","type":"text","label":"Date range"}
+        ]}
+      ]
+    },
+    {
+      "id": "education",
+      "label": "Education",
+      "fields": [
+        {"key":"education","type":"repeater","label":"Education","source":"extra","items":[
+          {"key":"yr","type":"text","label":"Year range"},
+          {"key":"degree","type":"text","label":"Degree"},
+          {"key":"school","type":"text","label":"Institution"},
+          {"key":"detail","type":"text","label":"Detail"},
+          {"key":"pill","type":"text","label":"Highlight pill"}
+        ]}
+      ]
+    },
+    {
+      "id": "skills",
+      "label": "Skills",
+      "fields": [
+        {"key":"skills","type":"repeater","label":"Skill Groups","source":"extra","items":[
+          {"key":"icon","type":"text","label":"Icon (emoji)"},
+          {"key":"head","type":"text","label":"Category"},
+          {"key":"items","type":"textarea","label":"Skills (comma or line separated)"}
+        ]}
+      ]
+    },
+    {
+      "id": "projects",
+      "label": "Projects",
+      "fields": [
+        {"key":"projects","type":"repeater","label":"Projects","source":"extra","items":[
+          {"key":"num","type":"text","label":"Number"},
+          {"key":"title","type":"text","label":"Title"},
+          {"key":"desc","type":"textarea","label":"Description"},
+          {"key":"tags","type":"textarea","label":"Tags"},
+          {"key":"link_label","type":"text","label":"Link Label"},
+          {"key":"link_href","type":"link","label":"Link URL"}
+        ]}
+      ]
+    },
+    {
+      "id": "certifications",
+      "label": "Certifications",
+      "fields": [
+        {"key":"certifications","type":"repeater","label":"Certifications","source":"extra","items":[
+          {"key":"icon","type":"text","label":"Icon (emoji)"},
+          {"key":"name","type":"text","label":"Name"},
+          {"key":"issuer","type":"text","label":"Issuer"},
+          {"key":"yr","type":"text","label":"Year"},
+          {"key":"status","type":"text","label":"Status"}
+        ]}
+      ]
+    },
+    {
+      "id": "contact",
+      "label": "Contact",
+      "fields": [
+        {"key":"contact_heading","type":"text","label":"Heading","source":"flat"},
+        {"key":"contact_heading_italic","type":"text","label":"Heading (italic)","source":"flat"},
+        {"key":"contact_subtext","type":"text","label":"Subtext","source":"flat"},
+        {"key":"contact_links","type":"repeater","label":"Contact Links","source":"flat","items":[
+          {"key":"icon","type":"text","label":"Icon (emoji)"},
+          {"key":"label","type":"text","label":"Label"},
+          {"key":"value","type":"text","label":"Display value"},
+          {"key":"href","type":"link","label":"Link URL"}
+        ]}
+      ]
+    },
+    {
+      "id": "cv",
+      "label": "CV Download",
+      "fields": [
+        {"key":"cv_title","type":"text","label":"Title","source":"extra"},
+        {"key":"cv_subtext","type":"text","label":"Subtext","source":"extra"},
+        {"key":"cv_button_label","type":"text","label":"Button Label","source":"extra"},
+        {"key":"cv_button_href","type":"link","label":"Button Link (PDF)","source":"extra"}
+      ]
+    },
+    {
+      "id": "footer",
+      "label": "Footer",
+      "fields": [
+        {"key":"footer_name","type":"text","label":"Footer Name","source":"flat"},
+        {"key":"footer_status","type":"text","label":"Footer Status","source":"flat"},
+        {"key":"footer_location","type":"text","label":"Footer Location","source":"extra"}
+      ]
+    }
+  ]
+}

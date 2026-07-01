@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { ArrowLeft, ArrowRight, ExternalLink, MonitorSmartphone, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { TEMPLATE_REGISTRY } from '../templates/registry';
+import { TEMPLATE_REGISTRY } from '../../templates/registry';
 import { useTemplate, useTemplates } from '../hooks/useTemplates';
 import { usePortZenStore } from '../store/usePortZenStore';
 import type { Template, TemplateCategory, TemplateFilter } from '../types';

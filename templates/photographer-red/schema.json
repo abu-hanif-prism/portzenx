@@ -1,0 +1,92 @@
+{
+  "sections": [
+    {
+      "id": "hero",
+      "label": "Hero",
+      "fields": [
+        {"key": "logo_text",        "type": "text",     "label": "Logo text",          "source": "flat"},
+        {"key": "hero_eyebrow",     "type": "text",     "label": "Eyebrow tag",        "source": "flat"},
+        {"key": "hero_name",        "type": "text",     "label": "First name",         "source": "flat"},
+        {"key": "hero_name_italic", "type": "text",     "label": "Last name (italic)", "source": "flat"},
+        {"key": "hero_subtitle",    "type": "textarea", "label": "Subtitle",           "source": "flat"},
+        {"key": "hero_cta1_label",  "type": "text",     "label": "Button 1 label",     "source": "flat"},
+        {"key": "hero_cta1_href",   "type": "link",     "label": "Button 1 URL",       "source": "flat"},
+        {"key": "hero_cta2_label",  "type": "text", "label": "Button 2 label", "source": "flat"},
+        {"key": "hero_cta2_href",   "type": "link", "label": "Button 2 URL",   "source": "flat"},
+        {"key": "hero_images", "type": "repeater", "label": "Slideshow images", "source": "flat", "max": 5, "slotPrefix": "hero",
+          "items": [
+            {"key": "src", "type": "image", "label": "Image"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gallery",
+      "label": "Gallery",
+      "fields": [
+        {"key": "gallery_images", "type": "repeater", "label": "Gallery photos", "source": "flat", "max": 15, "slotPrefix": "gallery",
+          "items": [
+            {"key": "src",      "type": "image", "label": "Photo"},
+            {"key": "title",    "type": "text",  "label": "Title"},
+            {"key": "category", "type": "text",  "label": "Category"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "about",
+      "label": "About",
+      "fields": [
+        {"key": "about_title",        "type": "text",     "label": "Heading",          "source": "flat"},
+        {"key": "about_title_italic", "type": "text",     "label": "Heading italic",   "source": "flat"},
+        {"key": "about_bio_1",        "type": "textarea", "label": "Bio paragraph 1",  "source": "flat"},
+        {"key": "about_quote",        "type": "text",     "label": "Pull quote",       "source": "flat"},
+        {"key": "about_bio_2",        "type": "textarea", "label": "Bio paragraph 2",  "source": "flat"},
+        {"key": "about_image",        "type": "image",    "label": "About photo",      "source": "flat", "slot": "about"},
+        {"key": "stats", "type": "repeater", "label": "Stats", "source": "flat",
+          "items": [
+            {"key": "number", "type": "text", "label": "Number"},
+            {"key": "label",  "type": "text", "label": "Label"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "services",
+      "label": "Services",
+      "fields": [
+        {"key": "services", "type": "repeater", "label": "Services", "source": "flat",
+          "items": [
+            {"key": "title",       "type": "text",     "label": "Title"},
+            {"key": "description", "type": "textarea", "label": "Description"},
+            {"key": "price",       "type": "text",     "label": "Price"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "contact",
+      "label": "Contact",
+      "fields": [
+        {"key": "contact_heading",        "type": "text",     "label": "Heading",        "source": "flat"},
+        {"key": "contact_heading_italic", "type": "text",     "label": "Heading italic", "source": "flat"},
+        {"key": "contact_subtext",        "type": "textarea", "label": "Subtext",        "source": "flat"},
+        {"key": "contact_links", "type": "repeater", "label": "Contact links", "source": "flat",
+          "items": [
+            {"key": "label", "type": "text", "label": "Label"},
+            {"key": "value", "type": "text", "label": "Display value"},
+            {"key": "href",  "type": "link", "label": "URL"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "footer",
+      "label": "Footer",
+      "fields": [
+        {"key": "footer_name",   "type": "text", "label": "Name",        "source": "flat"},
+        {"key": "footer_status", "type": "text", "label": "Status line", "source": "flat"}
+      ]
+    }
+  ]
+}

@@ -22,3 +22,7 @@ vite.config.d.ts
 # OS
 .DS_Store
 Thumbs.db
+
+# Local CLI state (machine-specific, not shared)
+.wrangler/
+supabase/.temp/

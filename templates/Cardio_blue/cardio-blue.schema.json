@@ -1,0 +1,156 @@
+{
+  "sections": [
+    {
+      "id": "nav",
+      "label": "Navigation",
+      "fields": [
+        {"key":"nav_initials","type":"text","label":"Logo Initials","source":"extra"},
+        {"key":"logo_text","type":"text","label":"Name (Nav Bar)","source":"flat"},
+        {"key":"nav_credentials","type":"text","label":"Credentials Suffix (e.g. MD, FACC)","source":"extra"},
+        {"key":"nav_phone","type":"text","label":"Phone Number (Nav Bar)","source":"extra"},
+        {"key":"nav_cta_label","type":"text","label":"Nav Button Label","source":"extra"}
+      ]
+    },
+    {
+      "id": "hero",
+      "label": "Hero",
+      "fields": [
+        {"key":"hero_eyebrow","type":"text","label":"Badge Text","source":"flat"},
+        {"key":"hero_name","type":"textarea","label":"Headline (plain part)","source":"flat"},
+        {"key":"hero_name_italic","type":"text","label":"Headline (italic part / name)","source":"flat"},
+        {"key":"hero_subtitle","type":"textarea","label":"Hero Description","source":"flat"},
+        {"key":"hero_cta1_label","type":"text","label":"Primary Button Label","source":"flat"},
+        {"key":"hero_cta1_href","type":"link","label":"Primary Button Link","source":"flat"},
+        {"key":"hero_cta2_label","type":"text","label":"Secondary Button Label","source":"flat"},
+        {"key":"hero_cta2_href","type":"link","label":"Secondary Button Link","source":"flat"},
+        {"key":"hero_photo","type":"image","label":"Hero Photo","source":"extra"},
+        {"key":"stats","type":"repeater","label":"Trust Stats","source":"flat","items":[
+          {"key":"number","type":"text","label":"Number"},
+          {"key":"label","type":"text","label":"Label"}
+        ]},
+        {"key":"hero_credentials","type":"repeater","label":"Hero Credential Cards","source":"extra","items":[
+          {"key":"icon","type":"text","label":"Icon (emoji)"},
+          {"key":"title","type":"text","label":"Title"},
+          {"key":"subtitle","type":"text","label":"Subtitle"}
+        ]}
+      ]
+    },
+    {
+      "id": "trust_bar",
+      "label": "Trust Bar",
+      "fields": [
+        {"key":"trust_badges","type":"repeater","label":"Trust Badges","source":"extra","items":[
+          {"key":"highlight","type":"text","label":"Highlighted Word(s)"},
+          {"key":"suffix","type":"text","label":"Rest of Text"}
+        ]}
+      ]
+    },
+    {
+      "id": "specialties",
+      "label": "Specialties",
+      "fields": [
+        {"key":"specialties_eyebrow","type":"text","label":"Eyebrow","source":"extra"},
+        {"key":"specialties_title","type":"text","label":"Title (plain part)","source":"extra"},
+        {"key":"specialties_title_italic","type":"text","label":"Title (italic part)","source":"extra"},
+        {"key":"specialties_subtitle","type":"textarea","label":"Subtitle","source":"extra"},
+        {"key":"services","type":"repeater","label":"Specialty Cards","source":"flat","items":[
+          {"key":"icon","type":"text","label":"Icon (emoji)"},
+          {"key":"title","type":"text","label":"Title"},
+          {"key":"description","type":"textarea","label":"Description"}
+        ]}
+      ]
+    },
+    {
+      "id": "about",
+      "label": "About",
+      "fields": [
+        {"key":"about_image","type":"image","label":"About Photo","source":"flat"},
+        {"key":"about_eyebrow","type":"text","label":"Eyebrow","source":"extra"},
+        {"key":"about_title","type":"text","label":"Title (plain part)","source":"flat"},
+        {"key":"about_title_italic","type":"text","label":"Title (italic part)","source":"flat"},
+        {"key":"about_quote","type":"textarea","label":"Pull Quote","source":"flat"},
+        {"key":"about_bio_1","type":"textarea","label":"Bio Paragraph 1","source":"flat"},
+        {"key":"about_bio_2","type":"textarea","label":"Bio Paragraph 2","source":"flat"},
+        {"key":"education","type":"repeater","label":"Education / Training","source":"extra","items":[
+          {"key":"title","type":"text","label":"Degree / Program"},
+          {"key":"subtitle","type":"text","label":"Institution & Years"}
+        ]}
+      ]
+    },
+    {
+      "id": "experience",
+      "label": "Experience",
+      "fields": [
+        {"key":"experience_eyebrow","type":"text","label":"Eyebrow","source":"extra"},
+        {"key":"experience_title","type":"text","label":"Title (plain part)","source":"extra"},
+        {"key":"experience_title_italic","type":"text","label":"Title (italic part)","source":"extra"},
+        {"key":"experience_subtitle","type":"textarea","label":"Subtitle","source":"extra"},
+        {"key":"experience","type":"repeater","label":"Career Timeline","source":"extra","items":[
+          {"key":"year","type":"text","label":"Year Range"},
+          {"key":"organization","type":"text","label":"Organization"},
+          {"key":"role","type":"text","label":"Role"},
+          {"key":"description","type":"textarea","label":"Description"}
+        ]}
+      ]
+    },
+    {
+      "id": "publications",
+      "label": "Publications",
+      "fields": [
+        {"key":"publications_eyebrow","type":"text","label":"Eyebrow","source":"extra"},
+        {"key":"publications_title","type":"text","label":"Title (plain part)","source":"extra"},
+        {"key":"publications_title_italic","type":"text","label":"Title (italic part)","source":"extra"},
+        {"key":"publications_subtitle","type":"textarea","label":"Subtitle","source":"extra"},
+        {"key":"publications","type":"repeater","label":"Publications List","source":"extra","items":[
+          {"key":"journal","type":"text","label":"Journal & Year"},
+          {"key":"title","type":"text","label":"Publication Title"},
+          {"key":"authors","type":"text","label":"Authors"},
+          {"key":"year","type":"text","label":"Year"}
+        ]}
+      ]
+    },
+    {
+      "id": "testimonials",
+      "label": "Testimonials",
+      "fields": [
+        {"key":"testimonials_eyebrow","type":"text","label":"Eyebrow","source":"extra"},
+        {"key":"testimonials_title","type":"text","label":"Title (plain part)","source":"extra"},
+        {"key":"testimonials_title_italic","type":"text","label":"Title (italic part)","source":"extra"},
+        {"key":"testimonials_subtitle","type":"textarea","label":"Subtitle","source":"extra"},
+        {"key":"testimonials","type":"repeater","label":"Patient Testimonials","source":"extra","items":[
+          {"key":"stars","type":"text","label":"Star Rating (e.g. ★★★★★)"},
+          {"key":"text","type":"textarea","label":"Testimonial Text"},
+          {"key":"initials","type":"text","label":"Avatar Initials"},
+          {"key":"name","type":"text","label":"Patient Name"},
+          {"key":"label","type":"text","label":"Patient Label"}
+        ]}
+      ]
+    },
+    {
+      "id": "contact",
+      "label": "Contact / Booking",
+      "fields": [
+        {"key":"contact_eyebrow","type":"text","label":"Eyebrow","source":"extra"},
+        {"key":"contact_heading","type":"text","label":"Heading (plain part)","source":"flat"},
+        {"key":"contact_heading_italic","type":"text","label":"Heading (italic part)","source":"flat"},
+        {"key":"contact_subtext","type":"textarea","label":"Subtext Paragraph 1","source":"flat"},
+        {"key":"contact_subtext_2","type":"textarea","label":"Subtext Paragraph 2","source":"extra"},
+        {"key":"contact_links","type":"repeater","label":"Contact Info Rows","source":"flat","items":[
+          {"key":"icon","type":"text","label":"Icon (emoji)"},
+          {"key":"label","type":"text","label":"Label"},
+          {"key":"value","type":"text","label":"Display Value"},
+          {"key":"href","type":"link","label":"Link (tel:/mailto:/url)"}
+        ]}
+      ]
+    },
+    {
+      "id": "footer",
+      "label": "Footer",
+      "fields": [
+        {"key":"footer_name","type":"text","label":"Footer Name & Credentials","source":"flat"},
+        {"key":"footer_bio","type":"textarea","label":"Footer Bio","source":"extra"},
+        {"key":"footer_status","type":"text","label":"Footer Status Line","source":"flat"}
+      ]
+    }
+  ]
+}
