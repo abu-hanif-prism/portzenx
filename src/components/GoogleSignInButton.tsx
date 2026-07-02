@@ -36,10 +36,16 @@ export function GoogleSignInButton({ onCredential }: Props) {
         client_id: clientId!,
         callback: (resp) => onCredential(resp.credential),
       });
+      // Measure the nearest containing block, not ref.current itself — on
+      // first render (esp. mobile, before webfonts/layout settle) offsetWidth
+      // can briefly read wider than the actual viewport, which then renders
+      // an oversized Google button (esp. the "Continue as <account>" variant
+      // shown when already signed in) that pushes the whole page wider.
+      const available = ref.current.parentElement?.clientWidth || ref.current.offsetWidth || 320;
       window.google!.accounts.id.renderButton(ref.current, {
         theme: 'outline',
         size: 'large',
-        width: Math.min(ref.current.offsetWidth || 320, 400),
+        width: Math.max(200, Math.min(available, 400)),
         text: 'continue_with',
       });
     }
@@ -58,5 +64,10 @@ export function GoogleSignInButton({ onCredential }: Props) {
 
   if (!clientId) return null;
 
-  return <div ref={ref} className="w-full [&>div]:!w-full" />;
+  return (
+    <div
+      ref={ref}
+      className="w-full max-w-full overflow-hidden [&>div]:!max-w-full [&_iframe]:!max-w-full"
+    />
+  );
 }
