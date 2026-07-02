@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
   try { body = await req.json(); }
   catch { return json({ error: 'Invalid request body' }, 400); }
 
-  const { name, email, subdomain, password, templateId, plan } = body as Record<string, string>;
+  const { name, email, subdomain, templateId, plan } = body as Record<string, string>;
 
   if (!name?.trim() || name.trim().length < 2)
     return json({ error: 'Name is required' }, 400);
@@ -49,8 +49,6 @@ Deno.serve(async (req) => {
     return json({ error: 'Valid email is required' }, 400);
   if (!subdomain || subdomain.length < 3 || subdomain.length > 30 || !SUBDOMAIN_RE.test(subdomain))
     return json({ error: 'Invalid subdomain' }, 400);
-  if (!password || password.length < 8)
-    return json({ error: 'Password must be at least 8 characters' }, 400);
   const amount = PLAN_AMOUNT[plan];
   if (!amount) return json({ error: 'Unsupported plan for online checkout' }, 400);
 
@@ -76,7 +74,10 @@ Deno.serve(async (req) => {
     .eq('subdomain', subdomain);
   if (count && count > 0) return json({ error: 'Subdomain already taken' }, 409);
 
-  const passwordHash = await bcrypt.hash(password, 10);
+  // No client-supplied password anymore — access is purely via the magic edit
+  // link. Still populate password_hash with an unguessable random value since
+  // the column is non-nullable; it's never used to authenticate.
+  const passwordHash = await bcrypt.hash(crypto.randomUUID(), 10);
   const tranId        = `pz_${crypto.randomUUID().replace(/-/g, '')}`;
 
   const { error: orderErr } = await sb.from('orders').insert({

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   ArrowLeft, ArrowRight, Check, Copy, ExternalLink,
-  Eye, EyeOff, Loader2, Sparkles, User, Globe, Lock, Mail, ShieldCheck,
+  Loader2, Sparkles, User, Globe, Mail, ShieldCheck,
 } from 'lucide-react';
 import { functionErrorMessage, supabase } from '../lib/supabase';
 
@@ -9,8 +9,6 @@ interface SignupForm {
   name: string;
   email: string;
   subdomain: string;
-  password: string;
-  confirmPassword: string;
 }
 
 interface SignupResult {
@@ -44,9 +42,8 @@ export function SignupPortal() {
   const planParam = params.get('plan');
   const plan: Plan = planParam === 'six_months' || planParam === 'one_year' ? planParam : 'trial';
 
-  const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [form, setForm] = useState<SignupForm>({ name: '', email: '', subdomain: '', password: '', confirmPassword: '' });
-  const [showPw, setShowPw] = useState(false);
+  const [step, setStep] = useState<1 | 2>(1);
+  const [form, setForm] = useState<SignupForm>({ name: '', email: '', subdomain: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<SignupResult | null>(null);
@@ -57,7 +54,6 @@ export function SignupPortal() {
   const [otpSending, setOtpSending] = useState(false);
   const [otpVerifying, setOtpVerifying] = useState(false);
   const [otpError, setOtpError] = useState('');
-  const [otpVerified, setOtpVerified] = useState(false);
 
   // Debounced subdomain availability check
   const [subStatus, setSubStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
@@ -105,10 +101,6 @@ export function SignupPortal() {
     return step1Errors().length === 0;
   }
 
-  function step3Valid() {
-    return form.password.length >= 8 && form.password === form.confirmPassword;
-  }
-
   async function goToVerify() {
     if (!step1Valid()) return;
     setOtpError('');
@@ -153,11 +145,9 @@ export function SignupPortal() {
       });
       if (fnErr) throw new Error(await functionErrorMessage(fnErr));
       if (data?.error) throw new Error(data.error as string);
-      setOtpVerified(true);
-      setStep(3);
+      await submit();
     } catch (err) {
       setOtpError(err instanceof Error ? err.message : 'Verification failed');
-    } finally {
       setOtpVerifying(false);
     }
   }
@@ -172,7 +162,6 @@ export function SignupPortal() {
             name: form.name.trim(),
             email: form.email.trim(),
             subdomain: form.subdomain,
-            password: form.password,
             templateId,
           },
         });
@@ -188,7 +177,6 @@ export function SignupPortal() {
             name: form.name.trim(),
             email: form.email.trim(),
             subdomain: form.subdomain,
-            password: form.password,
             templateId,
             plan,
           },
@@ -204,6 +192,7 @@ export function SignupPortal() {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setLoading(false);
+      setOtpVerifying(false);
     }
   }
 
@@ -241,7 +230,7 @@ export function SignupPortal() {
                 {copied ? <Check size={13} className="text-primary" /> : <Copy size={13} />}
               </button>
             </div>
-            <p className="mt-2 text-xs text-forest/45">Expires in 24 hours — save it or bookmark it now.</p>
+            <p className="mt-2 text-xs text-forest/45">Expires in 24 hours — save it or bookmark it now. This is the only way to edit your portfolio, so don't lose it.</p>
           </div>
 
           {/* Site URL */}
@@ -292,9 +281,7 @@ export function SignupPortal() {
         <div className="mb-7 flex items-center gap-3">
           <StepDot n={1} active={step === 1} done={step > 1} />
           <div className="h-px flex-1 bg-line" />
-          <StepDot n={2} active={step === 2} done={step > 2} />
-          <div className="h-px flex-1 bg-line" />
-          <StepDot n={3} active={step === 3} done={false} />
+          <StepDot n={2} active={step === 2} done={false} />
         </div>
 
         {step === 1 && (
@@ -402,7 +389,10 @@ export function SignupPortal() {
             </button>
             <h1 className="font-display text-3xl font-bold text-forest">Verify your email</h1>
             <p className="mt-2 text-sm text-forest/60">
-              Enter the 6-digit code sent to <span className="font-semibold text-primary">{form.email}</span>.
+              Enter the 6-digit code sent to <span className="font-semibold text-primary">{form.email}</span>.{' '}
+              {plan === 'trial'
+                ? "We'll create your portfolio as soon as it's verified."
+                : "We'll take you to payment as soon as it's verified."}
             </p>
 
             <div className="mt-7 grid gap-3">
@@ -427,11 +417,13 @@ export function SignupPortal() {
               <button
                 type="button"
                 onClick={() => void verifyOtp()}
-                disabled={otp.length !== 6 || otpVerifying}
+                disabled={otp.length !== 6 || otpVerifying || loading}
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-forest to-primary px-5 text-sm font-semibold text-panel transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {otpVerifying ? <Loader2 size={17} className="animate-spin" /> : <ShieldCheck size={17} />}
-                {otpVerifying ? 'Verifying…' : 'Verify code'}
+                {otpVerifying || loading ? <Loader2 size={17} className="animate-spin" /> : <ShieldCheck size={17} />}
+                {loading
+                  ? plan === 'trial' ? 'Creating your portfolio…' : 'Starting checkout…'
+                  : otpVerifying ? 'Verifying…' : 'Verify & Continue'}
               </button>
 
               <button
@@ -441,60 +433,6 @@ export function SignupPortal() {
                 className="text-xs font-semibold text-forest/50 transition hover:text-forest"
               >
                 {otpSending ? 'Sending…' : "Didn't get it? Resend code"}
-              </button>
-            </div>
-          </>
-        )}
-
-        {step === 3 && (
-          <>
-            <button
-              type="button"
-              onClick={() => setStep(2)}
-              className="mb-5 inline-flex items-center gap-1.5 text-sm font-semibold text-forest/55 transition hover:text-forest"
-            >
-              <ArrowLeft size={14} />
-              Back
-            </button>
-            <h1 className="font-display text-3xl font-bold text-forest">Set your password</h1>
-            <p className="mt-2 text-sm text-forest/60">
-              You'll use <span className="font-semibold text-primary">{form.subdomain}</span> + this password to get your edit link anytime.
-            </p>
-
-            <div className="mt-7 grid gap-3">
-              <PasswordField
-                placeholder="Password (min 8 characters)"
-                value={form.password}
-                onChange={(v) => set('password', v)}
-                show={showPw}
-                onToggleShow={() => setShowPw(!showPw)}
-                autoComplete="new-password"
-              />
-              <PasswordField
-                placeholder="Confirm password"
-                value={form.confirmPassword}
-                onChange={(v) => set('confirmPassword', v)}
-                show={showPw}
-                onToggleShow={() => setShowPw(!showPw)}
-                autoComplete="new-password"
-              />
-
-              {form.confirmPassword.length > 0 && form.password !== form.confirmPassword && (
-                <p className="text-xs text-red-500">Passwords do not match.</p>
-              )}
-
-              {error && <ErrorBanner message={error} />}
-
-              <button
-                type="button"
-                onClick={() => void submit()}
-                disabled={!step3Valid() || !otpVerified || loading}
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-forest to-primary px-5 text-sm font-semibold text-panel transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {loading ? <Loader2 size={17} className="animate-spin" /> : <Sparkles size={17} />}
-                {loading
-                  ? plan === 'trial' ? 'Creating your portfolio…' : 'Starting checkout…'
-                  : plan === 'trial' ? 'Create My Portfolio' : 'Continue to Payment'}
               </button>
             </div>
 
@@ -549,40 +487,6 @@ function InputField({
         autoComplete={autoComplete}
         className="min-h-12 flex-1 bg-transparent px-3 text-sm text-forest outline-none placeholder:text-forest/35"
       />
-    </div>
-  );
-}
-
-function PasswordField({
-  placeholder, value, onChange, show, onToggleShow, autoComplete,
-}: {
-  placeholder: string;
-  value: string;
-  onChange: (v: string) => void;
-  show: boolean;
-  onToggleShow: () => void;
-  autoComplete?: string;
-}) {
-  return (
-    <div className="flex overflow-hidden rounded-xl border border-line bg-ink transition focus-within:border-primary">
-      <span className="flex items-center border-r border-line bg-ink/80 px-3 text-forest/40">
-        <Lock size={15} />
-      </span>
-      <input
-        type={show ? 'text' : 'password'}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        autoComplete={autoComplete}
-        className="min-h-12 flex-1 bg-transparent px-3 text-sm text-forest outline-none placeholder:text-forest/35"
-      />
-      <button
-        type="button"
-        onClick={onToggleShow}
-        className="px-3 text-forest/35 transition hover:text-forest/70"
-      >
-        {show ? <EyeOff size={15} /> : <Eye size={15} />}
-      </button>
     </div>
   );
 }
