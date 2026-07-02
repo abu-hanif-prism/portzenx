@@ -1,10 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
-import bcrypt from 'https://esm.sh/bcryptjs@2.4.3';
 
 interface CustomerRecord {
   id: string;
   subdomain: string;
-  password_hash: string;
+  email: string;
   expires_at: string;
 }
 
@@ -42,29 +41,29 @@ Deno.serve(async (request) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  const siteUrl = Deno.env.get('SITE_URL') ?? 'https://portzen.app';
+  const editSiteUrl = Deno.env.get('EDIT_SITE_URL') ?? 'https://edit.md-hanif.xyz';
 
   if (!supabaseUrl || !serviceRoleKey) {
     return json({ error: 'Server is missing Supabase configuration.' }, 500);
   }
 
-  const { customerId, password } = await request.json().catch(() => ({ customerId: '', password: '' }));
+  const { customerId, email } = await request.json().catch(() => ({ customerId: '', email: '' }));
   if (typeof customerId !== 'string' || customerId.trim().length === 0) {
-    return json({ error: 'Customer ID is required.' }, 400);
+    return json({ error: 'Customer ID or subdomain is required.' }, 400);
   }
-
-  if (typeof password !== 'string' || password.trim().length === 0) {
-    return json({ error: 'Password is required.' }, 400);
+  if (typeof email !== 'string' || !email.includes('@')) {
+    return json({ error: 'Valid email is required.' }, 400);
   }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false },
   });
 
+  const normalizedEmail = email.trim().toLowerCase();
   const accountId = customerId.trim();
   const customerQuery = supabase
     .from('customers')
-    .select('id,subdomain,password_hash,expires_at')
+    .select('id,subdomain,email,expires_at')
     .gt('expires_at', new Date().toISOString());
 
   const { data: customer, error } = isUuid(accountId)
@@ -79,9 +78,24 @@ Deno.serve(async (request) => {
     return json({ error: 'Invalid customer ID or expired subscription.' }, 401);
   }
 
-  const passwordMatches = await bcrypt.compare(password, customer.password_hash);
-  if (!passwordMatches) {
-    return json({ error: 'Invalid customer ID or password.' }, 401);
+  if (customer.email?.trim().toLowerCase() !== normalizedEmail) {
+    return json({ error: 'That email does not match this account.' }, 401);
+  }
+
+  // Email must have a verified OTP from the last 30 minutes, same freshness
+  // window used at signup — replaces the old password check.
+  const { data: otpRow } = await supabase
+    .from('signup_otps')
+    .select('verified,created_at')
+    .eq('email', normalizedEmail)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const otpFresh = otpRow?.verified
+    && Date.now() - new Date(otpRow.created_at as string).getTime() < 30 * 60 * 1000;
+  if (!otpFresh) {
+    return json({ error: 'Please verify your email before continuing.' }, 403);
   }
 
   const token = createToken();
@@ -89,6 +103,7 @@ Deno.serve(async (request) => {
 
   const { error: insertError } = await supabase.from('edit_tokens').insert({
     customer_id: customer.id,
+    subdomain: customer.subdomain,
     token,
     used: false,
     expires_at: expiresAt,
@@ -98,6 +113,6 @@ Deno.serve(async (request) => {
     return json({ error: insertError.message }, 500);
   }
 
-  const magicLink = `${siteUrl.replace(/\/$/, '')}/edit/${token}`;
+  const magicLink = `${editSiteUrl.replace(/\/$/, '')}/${token}`;
   return json({ magicLink, expiresAt });
 });

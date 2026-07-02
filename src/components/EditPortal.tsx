@@ -1,38 +1,68 @@
-import { FormEvent } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
+import { useState } from 'react';
 import { ArrowLeft, Copy, Loader2, Plus, ShieldCheck, Sparkles } from 'lucide-react';
 import { functionErrorMessage, supabase } from '../lib/supabase';
 import { usePortZenStore } from '../store/usePortZenStore';
 import type { GenerateTokenResponse } from '../types';
 
-interface PortalForm {
-  customerId: string;
-  password: string;
-}
-
 export function EditPortal() {
-  const { register, handleSubmit, formState } = useForm<PortalForm>();
   const magicLink = usePortZenStore((state) => state.magicLink);
   const setMagicLink = usePortZenStore((state) => state.setMagicLink);
 
-  const generateToken = useMutation({
-    mutationFn: async ({ customerId, password }: PortalForm): Promise<GenerateTokenResponse> => {
-      const { data, error } = await supabase.functions.invoke<GenerateTokenResponse & { error?: string }>('generate-token', {
-        body: { customerId, password },
-      });
+  const [step, setStep] = useState<1 | 2>(1);
+  const [customerId, setCustomerId] = useState('');
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [sending, setSending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
 
-      if (error) throw new Error(await functionErrorMessage(error));
+  function step1Valid() {
+    return customerId.trim().length > 0 && email.includes('@');
+  }
+
+  async function sendCode() {
+    if (!step1Valid()) return;
+    setError('');
+    setSending(true);
+    try {
+      const { data, error: fnErr } = await supabase.functions.invoke('send-otp', {
+        body: { email: email.trim() },
+      });
+      if (fnErr) throw new Error(await functionErrorMessage(fnErr));
+      if (data?.error) throw new Error(data.error as string);
+      setStep(2);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not send verification code');
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function verifyAndGetLink() {
+    if (otp.length !== 6) return;
+    setError('');
+    setVerifying(true);
+    try {
+      const { data: verifyData, error: verifyErr } = await supabase.functions.invoke('verify-otp', {
+        body: { email: email.trim(), code: otp },
+      });
+      if (verifyErr) throw new Error(await functionErrorMessage(verifyErr));
+      if (verifyData?.error) throw new Error(verifyData.error as string);
+
+      const { data, error: fnErr } = await supabase.functions.invoke<GenerateTokenResponse & { error?: string }>('generate-token', {
+        body: { customerId: customerId.trim(), email: email.trim() },
+      });
+      if (fnErr) throw new Error(await functionErrorMessage(fnErr));
       if (data?.error) throw new Error(data.error);
       if (!data?.magicLink) throw new Error('No magic link returned.');
-      return data;
-    },
-  });
-
-  const onSubmit = handleSubmit(async ({ customerId, password }) => {
-    const result = await generateToken.mutateAsync({ customerId, password });
-    setMagicLink(result.magicLink);
-  });
+      setMagicLink(data.magicLink);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Verification failed');
+    } finally {
+      setVerifying(false);
+    }
+  }
 
   const copyLink = async () => {
     if (magicLink) await navigator.clipboard.writeText(magicLink);
@@ -80,41 +110,70 @@ export function EditPortal() {
               Copy Link
             </button>
           </div>
-        ) : (
-          <form onSubmit={(event: FormEvent<HTMLFormElement>) => void onSubmit(event)} className="mt-7 grid grid-cols-1 gap-3">
+        ) : step === 1 ? (
+          <div className="mt-7 grid grid-cols-1 gap-3">
             <input
               type="text"
-              placeholder="Customer ID or subdomain"
+              value={customerId}
+              onChange={(e) => setCustomerId(e.target.value)}
+              placeholder="Your subdomain (e.g. yourname)"
               autoComplete="username"
               className="min-h-12 rounded-xl border border-line bg-ink px-4 text-sm text-forest outline-none transition placeholder:text-forest/40 focus:border-primary"
-              {...register('customerId', { required: 'Customer ID is required.' })}
             />
             <input
-              type="password"
-              placeholder="Enter your password"
-              autoComplete="current-password"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email you signed up with"
+              autoComplete="email"
               className="min-h-12 rounded-xl border border-line bg-ink px-4 text-sm text-forest outline-none transition placeholder:text-forest/40 focus:border-primary"
-              {...register('password', { required: 'Password is required.' })}
             />
+            {error && <p className="text-sm text-red-600">{error}</p>}
             <button
-              type="submit"
-              disabled={generateToken.isPending}
+              type="button"
+              onClick={() => void sendCode()}
+              disabled={!step1Valid() || sending}
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-forest to-primary px-5 text-sm font-semibold text-panel transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {generateToken.isPending ? <Loader2 className="animate-spin" size={17} /> : <Sparkles size={17} />}
-              Get Edit Link
+              {sending ? <Loader2 className="animate-spin" size={17} /> : <Sparkles size={17} />}
+              {sending ? 'Sending code…' : 'Send verification code'}
             </button>
-          </form>
+          </div>
+        ) : (
+          <div className="mt-7 grid grid-cols-1 gap-3">
+            <p className="text-sm text-forest/60">
+              Enter the 6-digit code sent to <span className="font-semibold text-primary">{email}</span>.
+            </p>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              value={otp}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="000000"
+              autoComplete="one-time-code"
+              className="min-h-12 rounded-xl border border-line bg-ink px-4 text-center text-lg font-semibold tracking-[0.3em] text-forest outline-none transition placeholder:text-forest/25 focus:border-primary"
+            />
+            {error && <p className="text-sm text-red-600">{error}</p>}
+            <button
+              type="button"
+              onClick={() => void verifyAndGetLink()}
+              disabled={otp.length !== 6 || verifying}
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-forest to-primary px-5 text-sm font-semibold text-panel transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {verifying ? <Loader2 className="animate-spin" size={17} /> : <ShieldCheck size={17} />}
+              {verifying ? 'Verifying…' : 'Verify & Get Edit Link'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setStep(1); setError(''); }}
+              className="text-xs font-semibold text-forest/50 transition hover:text-forest"
+            >
+              Back
+            </button>
+          </div>
         )}
 
-        {formState.errors.customerId ? (
-          <p className="mt-3 text-sm text-red-600">{formState.errors.customerId.message}</p>
-        ) : formState.errors.password ? (
-          <p className="mt-3 text-sm text-red-600">{formState.errors.password.message}</p>
-        ) : null}
-        {generateToken.isError ? (
-          <p className="mt-3 text-sm text-red-600">{generateToken.error.message}</p>
-        ) : null}
         <p className="mt-5 text-xs text-forest/50">Magic links expire after 24 hours.</p>
       </div>
     </section>
