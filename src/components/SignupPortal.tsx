@@ -3,6 +3,7 @@ import {
   ArrowLeft, ArrowRight, Check, Copy, ExternalLink,
   Loader2, Sparkles, User, Globe, Mail, ShieldCheck,
 } from 'lucide-react';
+import { GoogleSignInButton } from './GoogleSignInButton';
 import { functionErrorMessage, supabase } from '../lib/supabase';
 
 interface SignupForm {
@@ -55,6 +56,11 @@ export function SignupPortal() {
   const [otpVerifying, setOtpVerifying] = useState(false);
   const [otpError, setOtpError] = useState('');
 
+  // Google sign-in — an alternate way to satisfy the same "verified email"
+  // gate the manual OTP flow uses, without spending an OTP send.
+  const [googleVerified, setGoogleVerified] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
   // Debounced subdomain availability check
   const [subStatus, setSubStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const checkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -99,6 +105,29 @@ export function SignupPortal() {
 
   function step1Valid() {
     return step1Errors().length === 0;
+  }
+
+  async function handleGoogleCredential(idToken: string) {
+    setError('');
+    setGoogleLoading(true);
+    try {
+      const { data, error: fnErr } = await supabase.functions.invoke('verify-google-token', {
+        body: { idToken },
+      });
+      if (fnErr) throw new Error(await functionErrorMessage(fnErr));
+      if (data?.error) throw new Error(data.error as string);
+      setForm((prev) => ({ ...prev, email: data.email as string, name: prev.name || (data.name as string) || '' }));
+      setGoogleVerified(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Google sign-in failed');
+    } finally {
+      setGoogleLoading(false);
+    }
+  }
+
+  async function primaryAction() {
+    if (googleVerified) await submit();
+    else await goToVerify();
   }
 
   async function goToVerify() {
@@ -290,6 +319,20 @@ export function SignupPortal() {
             <p className="mt-2 text-sm text-forest/60">Choose your address and tell us who you are.</p>
 
             <div className="mt-7 grid gap-3">
+              <GoogleSignInButton onCredential={(idToken) => void handleGoogleCredential(idToken)} />
+              {googleLoading && (
+                <p className="flex items-center justify-center gap-1.5 text-xs text-forest/50">
+                  <Loader2 size={12} className="animate-spin" />
+                  Verifying with Google…
+                </p>
+              )}
+
+              <div className="my-1 flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-forest/35">
+                <div className="h-px flex-1 bg-line" />
+                or continue manually
+                <div className="h-px flex-1 bg-line" />
+              </div>
+
               {/* Name */}
               <InputField
                 icon={<User size={15} />}
@@ -301,14 +344,22 @@ export function SignupPortal() {
               />
 
               {/* Email */}
-              <InputField
-                icon={<Mail size={15} />}
-                type="email"
-                placeholder="Email address"
-                value={form.email}
-                onChange={(v) => set('email', v)}
-                autoComplete="email"
-              />
+              {googleVerified ? (
+                <div className="flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/8 px-4 py-3 text-sm text-forest">
+                  <Check size={15} className="shrink-0 text-emerald-500" />
+                  <span className="truncate">{form.email}</span>
+                  <span className="ml-auto shrink-0 text-xs font-semibold text-emerald-600">Verified via Google</span>
+                </div>
+              ) : (
+                <InputField
+                  icon={<Mail size={15} />}
+                  type="email"
+                  placeholder="Email address"
+                  value={form.email}
+                  onChange={(v) => set('email', v)}
+                  autoComplete="email"
+                />
+              )}
 
               {/* Subdomain */}
               <div>
@@ -361,17 +412,21 @@ export function SignupPortal() {
 
               <button
                 type="button"
-                onClick={() => void goToVerify()}
-                disabled={!step1Valid() || otpSending}
+                onClick={() => void primaryAction()}
+                disabled={!step1Valid() || otpSending || loading}
                 className={[
                   'inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold text-panel transition',
-                  step1Valid() && !otpSending
+                  step1Valid() && !otpSending && !loading
                     ? 'bg-gradient-to-br from-forest to-primary hover:brightness-110 cursor-pointer'
                     : 'bg-forest/30 cursor-not-allowed',
                 ].join(' ')}
               >
-                {otpSending ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
-                {otpSending ? 'Sending code…' : 'Next'}
+                {otpSending || loading ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
+                {loading
+                  ? plan === 'trial' ? 'Creating your portfolio…' : 'Starting checkout…'
+                  : otpSending ? 'Sending code…'
+                    : googleVerified ? (plan === 'trial' ? 'Create My Portfolio' : 'Continue to Payment')
+                      : 'Next'}
               </button>
             </div>
           </>
