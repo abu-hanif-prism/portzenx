@@ -318,7 +318,7 @@ export function SignupPortal() {
             <h1 className="font-display text-3xl font-bold text-forest">Create your portfolio</h1>
             <p className="mt-2 text-sm text-forest/60">Choose your address and tell us who you are.</p>
 
-            <div className="mt-7 grid gap-3">
+            <div className="mt-7 grid gap-3 [&>*]:min-w-0">
               <GoogleSignInButton onCredential={(idToken) => void handleGoogleCredential(idToken)} />
               {googleLoading && (
                 <p className="flex items-center justify-center gap-1.5 text-xs text-forest/50">
@@ -373,7 +373,7 @@ export function SignupPortal() {
                     onChange={(e) => setSubdomain(e.target.value)}
                     placeholder="yourname"
                     autoComplete="off"
-                    className="min-h-12 flex-1 bg-transparent px-3 text-sm text-forest outline-none placeholder:text-forest/35"
+                    className="min-h-12 min-w-0 flex-1 bg-transparent px-3 text-sm text-forest outline-none placeholder:text-forest/35"
                   />
                   <span className="flex items-center px-3 text-sm font-medium text-forest/35">.portzenx.com</span>
                 </div>
@@ -450,7 +450,7 @@ export function SignupPortal() {
                 : "We'll take you to payment as soon as it's verified."}
             </p>
 
-            <div className="mt-7 grid gap-3">
+            <div className="mt-7 grid gap-3 [&>*]:min-w-0">
               <div className="flex overflow-hidden rounded-xl border border-line bg-ink transition focus-within:border-primary">
                 <span className="flex items-center border-r border-line bg-ink/80 px-3 text-forest/40">
                   <ShieldCheck size={15} />
@@ -463,7 +463,7 @@ export function SignupPortal() {
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   placeholder="000000"
                   autoComplete="one-time-code"
-                  className="min-h-12 flex-1 bg-transparent px-3 text-center text-lg font-semibold tracking-[0.3em] text-forest outline-none placeholder:text-forest/25"
+                  className="min-h-12 min-w-0 flex-1 bg-transparent px-3 text-center text-lg font-semibold tracking-[0.3em] text-forest outline-none placeholder:text-forest/25"
                 />
               </div>
 
@@ -540,7 +540,7 @@ function InputField({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         autoComplete={autoComplete}
-        className="min-h-12 flex-1 bg-transparent px-3 text-sm text-forest outline-none placeholder:text-forest/35"
+        className="min-h-12 min-w-0 flex-1 bg-transparent px-3 text-sm text-forest outline-none placeholder:text-forest/35"
       />
     </div>
   );

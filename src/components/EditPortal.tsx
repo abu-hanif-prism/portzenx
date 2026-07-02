@@ -146,7 +146,7 @@ export function EditPortal() {
             </button>
           </div>
         ) : step === 1 ? (
-          <div className="mt-7 grid grid-cols-1 gap-3">
+          <div className="mt-7 grid grid-cols-1 gap-3 [&>*]:min-w-0">
             <input
               type="text"
               value={customerId}
@@ -199,7 +199,7 @@ export function EditPortal() {
             </button>
           </div>
         ) : (
-          <div className="mt-7 grid grid-cols-1 gap-3">
+          <div className="mt-7 grid grid-cols-1 gap-3 [&>*]:min-w-0">
             <p className="text-sm text-forest/60">
               Enter the 6-digit code sent to <span className="font-semibold text-primary">{email}</span>.
             </p>
