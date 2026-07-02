@@ -67,7 +67,7 @@ export function GoogleSignInButton({ onCredential }: Props) {
   return (
     <div
       ref={ref}
-      className="w-full max-w-full overflow-hidden [&>div]:!max-w-full [&_iframe]:!max-w-full"
+      className="w-full min-w-0 max-w-full overflow-hidden [&>div]:!max-w-full [&_iframe]:!max-w-full"
     />
   );
 }
