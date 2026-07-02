@@ -2,7 +2,7 @@ import { FormEvent } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { ArrowLeft, Copy, Loader2, Plus, ShieldCheck, Sparkles } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { functionErrorMessage, supabase } from '../lib/supabase';
 import { usePortZenStore } from '../store/usePortZenStore';
 import type { GenerateTokenResponse } from '../types';
 
@@ -22,7 +22,7 @@ export function EditPortal() {
         body: { customerId, password },
       });
 
-      if (error) throw error;
+      if (error) throw new Error(await functionErrorMessage(error));
       if (data?.error) throw new Error(data.error);
       if (!data?.magicLink) throw new Error('No magic link returned.');
       return data;

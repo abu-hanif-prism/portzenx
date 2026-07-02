@@ -23,3 +23,21 @@ export const siteUrl = (import.meta.env.VITE_SITE_URL as string | undefined) ?? 
 
 export const whatsappNumber =
   (import.meta.env.VITE_WHATSAPP_NUMBER as string | undefined) ?? '8801700000000';
+
+/**
+ * supabase-js's functions.invoke() error is a generic "Edge Function returned
+ * a non-2xx status code" — the real message our functions return in the JSON
+ * body only lives on `error.context` (the raw Response). Extract it here.
+ */
+export async function functionErrorMessage(err: unknown): Promise<string> {
+  const context = (err as { context?: Response })?.context;
+  if (context && typeof context.json === 'function') {
+    try {
+      const body = await context.clone().json() as { error?: string };
+      if (body?.error) return body.error;
+    } catch {
+      // response body wasn't JSON — fall through to the generic message
+    }
+  }
+  return err instanceof Error ? err.message : 'Something went wrong';
+}

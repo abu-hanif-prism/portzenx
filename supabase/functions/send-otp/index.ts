@@ -53,11 +53,31 @@ Deno.serve(async (req) => {
   const { error } = await sb.from('signup_otps').insert({ email, code, expires_at: expiresAt });
   if (error) return json({ error: error.message }, 500);
 
-  // TODO: replace with a real transactional email send (e.g. Resend) once
-  // that's wired up. For now the code is only visible in these function logs
-  // (Supabase dashboard → Edge Functions → send-otp → Logs) so only the admin
-  // can read it while testing this flow — it is never returned to the client.
-  console.log(`[send-otp] verification code for ${email}: ${code} (expires ${expiresAt})`);
+  const resendKey  = Deno.env.get('RESEND_API_KEY');
+  const fromEmail  = Deno.env.get('RESEND_FROM_EMAIL') ?? 'PortZen <onboarding@resend.dev>';
+
+  if (resendKey) {
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from: fromEmail,
+          to: [email],
+          subject: `Your PortZen verification code: ${code}`,
+          html: `<p>Your PortZen verification code is:</p>
+                 <p style="font-size:28px;font-weight:700;letter-spacing:.2em">${code}</p>
+                 <p>This code expires in 10 minutes. If you didn't request this, ignore this email.</p>`,
+        }),
+      });
+      if (!res.ok) console.error('[send-otp] Resend API error:', await res.text());
+    } catch (e) {
+      console.error('[send-otp] Resend request failed:', e);
+    }
+  }
+  // Always log too — cheap fallback if Resend silently fails (unverified
+  // domain, rate limit) or RESEND_API_KEY isn't set yet.
+  console.log(`[send-otp] code for ${email}: ${code} (expires ${expiresAt})`);
 
   return json({ ok: true });
 });

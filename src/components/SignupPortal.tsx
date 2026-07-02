@@ -3,7 +3,7 @@ import {
   ArrowLeft, ArrowRight, Check, Copy, ExternalLink,
   Eye, EyeOff, Loader2, Sparkles, User, Globe, Lock, Mail, ShieldCheck,
 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { functionErrorMessage, supabase } from '../lib/supabase';
 
 interface SignupForm {
   name: string;
@@ -117,7 +117,7 @@ export function SignupPortal() {
       const { data, error: fnErr } = await supabase.functions.invoke('send-otp', {
         body: { email: form.email.trim() },
       });
-      if (fnErr) throw new Error(fnErr.message);
+      if (fnErr) throw new Error(await functionErrorMessage(fnErr));
       if (data?.error) throw new Error(data.error as string);
       setStep(2);
     } catch (err) {
@@ -134,7 +134,7 @@ export function SignupPortal() {
       const { data, error: fnErr } = await supabase.functions.invoke('send-otp', {
         body: { email: form.email.trim() },
       });
-      if (fnErr) throw new Error(fnErr.message);
+      if (fnErr) throw new Error(await functionErrorMessage(fnErr));
       if (data?.error) throw new Error(data.error as string);
     } catch (err) {
       setOtpError(err instanceof Error ? err.message : 'Could not resend code');
@@ -151,7 +151,7 @@ export function SignupPortal() {
       const { data, error: fnErr } = await supabase.functions.invoke('verify-otp', {
         body: { email: form.email.trim(), code: otp },
       });
-      if (fnErr) throw new Error(fnErr.message);
+      if (fnErr) throw new Error(await functionErrorMessage(fnErr));
       if (data?.error) throw new Error(data.error as string);
       setOtpVerified(true);
       setStep(3);
@@ -177,7 +177,7 @@ export function SignupPortal() {
           },
         });
 
-        if (fnErr) throw new Error(fnErr.message);
+        if (fnErr) throw new Error(await functionErrorMessage(fnErr));
         if (data?.error) throw new Error(data.error as string);
         if (!data?.magicLink) throw new Error('Something went wrong. Please try again.');
 
@@ -194,7 +194,7 @@ export function SignupPortal() {
           },
         });
 
-        if (fnErr) throw new Error(fnErr.message);
+        if (fnErr) throw new Error(await functionErrorMessage(fnErr));
         if (data?.error) throw new Error(data.error as string);
         if (!data?.gatewayUrl) throw new Error('Could not start checkout. Please try again.');
 
