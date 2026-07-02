@@ -408,7 +408,7 @@ function CustomerModal({
     ['Name',       c.name || '—'],
     ['Email',      c.email || '—'],
     ['WhatsApp',   c.whatsapp || '—'],
-    ['Subdomain',  `${c.subdomain}.md-hanif.xyz`],
+    ['Subdomain',  `${c.subdomain}.portzenx.com`],
     ['Template',   c.template_id || '—'],
     ['Joined',     fmtDate(c.created_at)],
   ];
@@ -464,7 +464,7 @@ function CustomerModal({
         <PlanBadge plan={plan} />
         <StatusBadge active={isActive} label={isActive ? 'Active' : 'Frozen'} />
         <a
-          href={`https://${c.subdomain}.md-hanif.xyz`}
+          href={`https://${c.subdomain}.portzenx.com`}
           target="_blank"
           rel="noreferrer"
           className="ml-auto inline-flex items-center gap-1.5 text-xs font-semibold text-primary transition hover:text-forest"

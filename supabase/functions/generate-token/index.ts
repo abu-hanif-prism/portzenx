@@ -41,7 +41,7 @@ Deno.serve(async (request) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  const editSiteUrl = Deno.env.get('EDIT_SITE_URL') ?? 'https://edit.md-hanif.xyz';
+  const editSiteUrl = Deno.env.get('EDIT_SITE_URL') ?? 'https://edit.portzenx.com';
 
   if (!supabaseUrl || !serviceRoleKey) {
     return json({ error: 'Server is missing Supabase configuration.' }, 500);

@@ -375,7 +375,7 @@ export function SignupPortal() {
                     autoComplete="off"
                     className="min-h-12 flex-1 bg-transparent px-3 text-sm text-forest outline-none placeholder:text-forest/35"
                   />
-                  <span className="flex items-center px-3 text-sm font-medium text-forest/35">.md-hanif.xyz</span>
+                  <span className="flex items-center px-3 text-sm font-medium text-forest/35">.portzenx.com</span>
                 </div>
 
                 {/* Subdomain status */}
@@ -390,7 +390,7 @@ export function SignupPortal() {
                           : 'text-forest/45'
                     }>
                       {subStatus === 'checking' && 'Checking availability…'}
-                      {subStatus === 'available' && `${form.subdomain}.md-hanif.xyz is available!`}
+                      {subStatus === 'available' && `${form.subdomain}.portzenx.com is available!`}
                       {subStatus === 'taken' && 'That subdomain is already taken.'}
                       {subStatus === 'idle' && subdomainError(form.subdomain)}
                     </span>

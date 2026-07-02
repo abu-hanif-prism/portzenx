@@ -19,8 +19,8 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const serviceKey  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const editSiteUrl = Deno.env.get('EDIT_SITE_URL')  ?? 'https://edit.md-hanif.xyz';
-  const portfolioBase = Deno.env.get('PORTFOLIO_BASE') ?? 'md-hanif.xyz';
+  const editSiteUrl = Deno.env.get('EDIT_SITE_URL')  ?? 'https://edit.portzenx.com';
+  const portfolioBase = Deno.env.get('PORTFOLIO_BASE') ?? 'portzenx.com';
 
   const tranId = new URL(req.url).searchParams.get('tran_id');
   if (!tranId) return json({ error: 'tran_id is required' }, 400);

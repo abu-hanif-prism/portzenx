@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const serviceKey  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const siteUrl     = (Deno.env.get('SITE_URL') ?? 'https://md-hanif.xyz').replace(/\/$/, '');
+  const siteUrl     = (Deno.env.get('SITE_URL') ?? 'https://portzenx.com').replace(/\/$/, '');
   const storeId     = Deno.env.get('SSLCOMMERZ_STORE_ID');
   const storePasswd = Deno.env.get('SSLCOMMERZ_STORE_PASSWORD');
   const sslBase     = Deno.env.get('SSLCOMMERZ_BASE_URL') ?? 'https://sandbox.sslcommerz.com';

@@ -1,7 +1,7 @@
 const HOST_MAP = {
-  'edit.md-hanif.xyz': 'portzen-edit.pages.dev',
-  'www.md-hanif.xyz':  'portzen-storefront.pages.dev',
-  'md-hanif.xyz':      'portzen-storefront.pages.dev',
+  'edit.portzenx.com': 'portzen-edit.pages.dev',
+  'www.portzenx.com':  'portzen-storefront.pages.dev',
+  'portzenx.com':      'portzen-storefront.pages.dev',
 };
 
 export default {
