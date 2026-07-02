@@ -51,6 +51,20 @@ Deno.serve(async (req) => {
 
   const sb = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
+  // Email must have a verified OTP from the last 30 minutes before we create an account.
+  const normalizedEmail = email.trim().toLowerCase();
+  const { data: otpRow } = await sb
+    .from('signup_otps')
+    .select('verified,created_at')
+    .eq('email', normalizedEmail)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const otpFresh = otpRow?.verified
+    && Date.now() - new Date(otpRow.created_at as string).getTime() < 30 * 60 * 1000;
+  if (!otpFresh) return json({ error: 'Please verify your email before continuing.' }, 403);
+
   // Subdomain uniqueness
   const { count } = await sb
     .from('customers')
@@ -59,7 +73,7 @@ Deno.serve(async (req) => {
   if (count && count > 0) return json({ error: 'Subdomain already taken' }, 409);
 
   const passwordHash = await bcrypt.hash(password, 10);
-  const expiresAt    = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+  const expiresAt    = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
   // Insert customer
   const { data: customer, error: custErr } = await sb

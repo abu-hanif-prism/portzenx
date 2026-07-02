@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   ArrowLeft, ArrowRight, Check, Copy, ExternalLink,
-  Eye, EyeOff, Loader2, Sparkles, User, Globe, Lock, Mail,
+  Eye, EyeOff, Loader2, Sparkles, User, Globe, Lock, Mail, ShieldCheck,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -20,6 +20,14 @@ interface SignupResult {
   expiresAt: string;
 }
 
+type Plan = 'trial' | 'six_months' | 'one_year';
+
+const PLAN_INFO: Record<Plan, { label: string; price: string }> = {
+  trial: { label: 'Trial', price: 'Free for 7 days' },
+  six_months: { label: 'Six Months', price: '৳300' },
+  one_year: { label: 'One Year', price: '৳500' },
+};
+
 const SUBDOMAIN_RE = /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/;
 
 function subdomainError(s: string): string | null {
@@ -31,15 +39,25 @@ function subdomainError(s: string): string | null {
 }
 
 export function SignupPortal() {
-  const templateId = new URLSearchParams(window.location.search).get('template') ?? 'photographer-red';
+  const params = new URLSearchParams(window.location.search);
+  const templateId = params.get('template') ?? 'photographer-red';
+  const planParam = params.get('plan');
+  const plan: Plan = planParam === 'six_months' || planParam === 'one_year' ? planParam : 'trial';
 
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [form, setForm] = useState<SignupForm>({ name: '', email: '', subdomain: '', password: '', confirmPassword: '' });
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<SignupResult | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Email OTP verification (step 2)
+  const [otp, setOtp] = useState('');
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [otpError, setOtpError] = useState('');
+  const [otpVerified, setOtpVerified] = useState(false);
 
   // Debounced subdomain availability check
   const [subStatus, setSubStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
@@ -87,29 +105,101 @@ export function SignupPortal() {
     return step1Errors().length === 0;
   }
 
-  function step2Valid() {
+  function step3Valid() {
     return form.password.length >= 8 && form.password === form.confirmPassword;
+  }
+
+  async function goToVerify() {
+    if (!step1Valid()) return;
+    setOtpError('');
+    setOtpSending(true);
+    try {
+      const { data, error: fnErr } = await supabase.functions.invoke('send-otp', {
+        body: { email: form.email.trim() },
+      });
+      if (fnErr) throw new Error(fnErr.message);
+      if (data?.error) throw new Error(data.error as string);
+      setStep(2);
+    } catch (err) {
+      setOtpError(err instanceof Error ? err.message : 'Could not send verification code');
+    } finally {
+      setOtpSending(false);
+    }
+  }
+
+  async function resendOtp() {
+    setOtpError('');
+    setOtpSending(true);
+    try {
+      const { data, error: fnErr } = await supabase.functions.invoke('send-otp', {
+        body: { email: form.email.trim() },
+      });
+      if (fnErr) throw new Error(fnErr.message);
+      if (data?.error) throw new Error(data.error as string);
+    } catch (err) {
+      setOtpError(err instanceof Error ? err.message : 'Could not resend code');
+    } finally {
+      setOtpSending(false);
+    }
+  }
+
+  async function verifyOtp() {
+    if (otp.length !== 6) return;
+    setOtpError('');
+    setOtpVerifying(true);
+    try {
+      const { data, error: fnErr } = await supabase.functions.invoke('verify-otp', {
+        body: { email: form.email.trim(), code: otp },
+      });
+      if (fnErr) throw new Error(fnErr.message);
+      if (data?.error) throw new Error(data.error as string);
+      setOtpVerified(true);
+      setStep(3);
+    } catch (err) {
+      setOtpError(err instanceof Error ? err.message : 'Verification failed');
+    } finally {
+      setOtpVerifying(false);
+    }
   }
 
   async function submit() {
     setError('');
     setLoading(true);
     try {
-      const { data, error: fnErr } = await supabase.functions.invoke('signup', {
-        body: {
-          name: form.name.trim(),
-          email: form.email.trim(),
-          subdomain: form.subdomain,
-          password: form.password,
-          templateId,
-        },
-      });
+      if (plan === 'trial') {
+        const { data, error: fnErr } = await supabase.functions.invoke('signup', {
+          body: {
+            name: form.name.trim(),
+            email: form.email.trim(),
+            subdomain: form.subdomain,
+            password: form.password,
+            templateId,
+          },
+        });
 
-      if (fnErr) throw new Error(fnErr.message);
-      if (data?.error) throw new Error(data.error as string);
-      if (!data?.magicLink) throw new Error('Something went wrong. Please try again.');
+        if (fnErr) throw new Error(fnErr.message);
+        if (data?.error) throw new Error(data.error as string);
+        if (!data?.magicLink) throw new Error('Something went wrong. Please try again.');
 
-      setResult(data as SignupResult);
+        setResult(data as SignupResult);
+      } else {
+        const { data, error: fnErr } = await supabase.functions.invoke('create-checkout', {
+          body: {
+            name: form.name.trim(),
+            email: form.email.trim(),
+            subdomain: form.subdomain,
+            password: form.password,
+            templateId,
+            plan,
+          },
+        });
+
+        if (fnErr) throw new Error(fnErr.message);
+        if (data?.error) throw new Error(data.error as string);
+        if (!data?.gatewayUrl) throw new Error('Could not start checkout. Please try again.');
+
+        window.location.href = data.gatewayUrl as string;
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -193,14 +283,21 @@ export function SignupPortal() {
       </a>
 
       <div className="rounded-[20px] border border-line bg-panel p-6 shadow-[0_24px_60px_rgba(101,146,135,0.18)] sm:p-9">
+        {/* Plan badge */}
+        <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/8 px-3 py-1 text-xs font-semibold text-primary">
+          {PLAN_INFO[plan].label} plan — {PLAN_INFO[plan].price}
+        </div>
+
         {/* Step indicator */}
         <div className="mb-7 flex items-center gap-3">
           <StepDot n={1} active={step === 1} done={step > 1} />
           <div className="h-px flex-1 bg-line" />
-          <StepDot n={2} active={step === 2} done={false} />
+          <StepDot n={2} active={step === 2} done={step > 2} />
+          <div className="h-px flex-1 bg-line" />
+          <StepDot n={3} active={step === 3} done={false} />
         </div>
 
-        {step === 1 ? (
+        {step === 1 && (
           <>
             <h1 className="font-display text-3xl font-bold text-forest">Create your portfolio</h1>
             <p className="mt-2 text-sm text-forest/60">Choose your address and tell us who you are.</p>
@@ -263,7 +360,7 @@ export function SignupPortal() {
                 )}
               </div>
 
-              {error && <ErrorBanner message={error} />}
+              {(error || otpError) && <ErrorBanner message={error || otpError} />}
 
               {!step1Valid() && (form.name || form.email || form.subdomain) && (
                 <ul className="space-y-1">
@@ -277,24 +374,83 @@ export function SignupPortal() {
 
               <button
                 type="button"
-                onClick={() => { if (step1Valid()) setStep(2); }}
+                onClick={() => void goToVerify()}
+                disabled={!step1Valid() || otpSending}
                 className={[
                   'inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold text-panel transition',
-                  step1Valid()
+                  step1Valid() && !otpSending
                     ? 'bg-gradient-to-br from-forest to-primary hover:brightness-110 cursor-pointer'
                     : 'bg-forest/30 cursor-not-allowed',
                 ].join(' ')}
               >
-                Next
-                <ArrowRight size={16} />
+                {otpSending ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
+                {otpSending ? 'Sending code…' : 'Next'}
               </button>
             </div>
           </>
-        ) : (
+        )}
+
+        {step === 2 && (
           <>
             <button
               type="button"
-              onClick={() => setStep(1)}
+              onClick={() => { setStep(1); setOtpError(''); }}
+              className="mb-5 inline-flex items-center gap-1.5 text-sm font-semibold text-forest/55 transition hover:text-forest"
+            >
+              <ArrowLeft size={14} />
+              Back
+            </button>
+            <h1 className="font-display text-3xl font-bold text-forest">Verify your email</h1>
+            <p className="mt-2 text-sm text-forest/60">
+              Enter the 6-digit code sent to <span className="font-semibold text-primary">{form.email}</span>.
+            </p>
+
+            <div className="mt-7 grid gap-3">
+              <div className="flex overflow-hidden rounded-xl border border-line bg-ink transition focus-within:border-primary">
+                <span className="flex items-center border-r border-line bg-ink/80 px-3 text-forest/40">
+                  <ShieldCheck size={15} />
+                </span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="000000"
+                  autoComplete="one-time-code"
+                  className="min-h-12 flex-1 bg-transparent px-3 text-center text-lg font-semibold tracking-[0.3em] text-forest outline-none placeholder:text-forest/25"
+                />
+              </div>
+
+              {otpError && <ErrorBanner message={otpError} />}
+
+              <button
+                type="button"
+                onClick={() => void verifyOtp()}
+                disabled={otp.length !== 6 || otpVerifying}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-forest to-primary px-5 text-sm font-semibold text-panel transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {otpVerifying ? <Loader2 size={17} className="animate-spin" /> : <ShieldCheck size={17} />}
+                {otpVerifying ? 'Verifying…' : 'Verify code'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => void resendOtp()}
+                disabled={otpSending}
+                className="text-xs font-semibold text-forest/50 transition hover:text-forest"
+              >
+                {otpSending ? 'Sending…' : "Didn't get it? Resend code"}
+              </button>
+            </div>
+          </>
+        )}
+
+        {step === 3 && (
+          <>
+            <button
+              type="button"
+              onClick={() => setStep(2)}
               className="mb-5 inline-flex items-center gap-1.5 text-sm font-semibold text-forest/55 transition hover:text-forest"
             >
               <ArrowLeft size={14} />
@@ -332,16 +488,21 @@ export function SignupPortal() {
               <button
                 type="button"
                 onClick={() => void submit()}
-                disabled={!step2Valid() || loading}
+                disabled={!step3Valid() || !otpVerified || loading}
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-forest to-primary px-5 text-sm font-semibold text-panel transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? <Loader2 size={17} className="animate-spin" /> : <Sparkles size={17} />}
-                {loading ? 'Creating your portfolio…' : 'Create My Portfolio'}
+                {loading
+                  ? plan === 'trial' ? 'Creating your portfolio…' : 'Starting checkout…'
+                  : plan === 'trial' ? 'Create My Portfolio' : 'Continue to Payment'}
               </button>
             </div>
 
             <p className="mt-5 text-xs text-forest/40">
-              By creating a portfolio you agree to our terms. Trial portfolios are active for 7 days.
+              By creating a portfolio you agree to our terms.{' '}
+              {plan === 'trial'
+                ? 'Trial portfolios are active for 7 days.'
+                : "You'll be redirected to our payment partner (SSLCommerz sandbox) to complete payment."}
             </p>
           </>
         )}

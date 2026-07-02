@@ -1,10 +1,10 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  ArrowLeft, Check, Copy, DollarSign,
-  Edit2, Eye, EyeOff, LayoutTemplate, Link2, Plus,
-  RefreshCw, Save, Search, Shield, Trash2, Upload, Users, X,
+  AlertTriangle, ArrowLeft, Check, Copy, DollarSign,
+  Edit2, ExternalLink, Eye, EyeOff, LayoutTemplate, Link2, Plus,
+  RefreshCw, Save, Search, Shield, Snowflake, Sun, Trash2, TrendingUp, Upload, Users, X,
 } from 'lucide-react';
 import { isSupabaseConfigured, supabase, supabaseAdmin } from '../lib/supabase';
 import type { Template, TemplateCategory } from '../types';
@@ -134,12 +134,13 @@ function AdminLogin({ onLogin }: { onLogin: () => void }) {
 }
 
 // ── Dashboard shell ───────────────────────────────────────────────────────────
-type Tab = 'users' | 'templates' | 'pricing';
+type Tab = 'users' | 'templates' | 'pricing' | 'revenue';
 
 const TABS: { key: Tab; label: string; icon: typeof Users }[] = [
   { key: 'users',     label: 'Users',     icon: Users },
   { key: 'templates', label: 'Templates', icon: LayoutTemplate },
   { key: 'pricing',   label: 'Pricing',   icon: DollarSign },
+  { key: 'revenue',   label: 'Revenue',   icon: TrendingUp },
 ];
 
 function Dashboard() {
@@ -176,6 +177,7 @@ function Dashboard() {
       {tab === 'users'     && <AdminUsers />}
       {tab === 'templates' && <AdminTemplates />}
       {tab === 'pricing'   && <AdminPricing />}
+      {tab === 'revenue'   && <AdminRevenue />}
     </div>
   );
 }
@@ -188,8 +190,8 @@ function AdminUsers() {
   const { data: customers = [], isLoading, refetch } = useQuery({
     queryKey: ['admin-customers'],
     queryFn: async (): Promise<Customer[]> => {
-      if (!isSupabaseConfigured) return DEMO_CUSTOMERS;
-      const { data, error } = await supabase
+      if (!isSupabaseConfigured || !supabaseAdmin) return DEMO_CUSTOMERS;
+      const { data, error } = await supabaseAdmin
         .from('customers')
         .select('*')
         .order('created_at', { ascending: false });
@@ -283,26 +285,131 @@ function AdminUsers() {
         </div>
       )}
 
-      {selected && <CustomerModal customer={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <CustomerModal
+          customer={selected}
+          onClose={() => setSelected(null)}
+          onChanged={() => void refetch()}
+        />
+      )}
     </div>
   );
 }
 
-function CustomerModal({ customer: c, onClose }: { customer: Customer; onClose: () => void }) {
+const PLAN_OPTIONS: { value: Customer['plan']; label: string }[] = [
+  { value: 'trial', label: 'Trial' },
+  { value: 'six_months', label: 'Six Months' },
+  { value: 'one_year', label: 'One Year' },
+  { value: 'custom', label: 'Custom' },
+];
+
+function CustomerModal({
+  customer: c, onClose, onChanged,
+}: { customer: Customer; onClose: () => void; onChanged: () => void }) {
   const [linkLoading, setLinkLoading] = useState(false);
   const [editLink, setEditLink] = useState('');
   const [linkError, setLinkError] = useState('');
   const [copied, setCopied] = useState(false);
+
+  const [plan, setPlan] = useState(c.plan);
+  const [expiresAt, setExpiresAt] = useState(c.expires_at ? c.expires_at.slice(0, 10) : '');
+  const [manageSaving, setManageSaving] = useState(false);
+  const [manageSaved, setManageSaved] = useState(false);
+  const [manageError, setManageError] = useState('');
+
+  const [isActive, setIsActive] = useState(c.is_active);
+  const [freezeSaving, setFreezeSaving] = useState(false);
+
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+
+  const [visits, setVisits] = useState<{ day: string; views: number }[]>([]);
+  const [visitsLoading, setVisitsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!supabaseAdmin) { setVisitsLoading(false); return; }
+      const { data, error } = await supabaseAdmin
+        .from('portfolio_visits')
+        .select('day,views')
+        .eq('customer_id', c.id)
+        .order('day', { ascending: false })
+        .limit(7);
+      if (cancelled) return;
+      setVisits(error ? [] : (data as { day: string; views: number }[]));
+      setVisitsLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [c.id]);
+
+  async function saveManage() {
+    if (!supabaseAdmin) return;
+    setManageSaving(true);
+    setManageError('');
+    setManageSaved(false);
+    try {
+      const { error } = await supabaseAdmin
+        .from('customers')
+        .update({ plan, expires_at: expiresAt ? new Date(expiresAt).toISOString() : null })
+        .eq('id', c.id);
+      if (error) throw error;
+      setManageSaved(true);
+      onChanged();
+      setTimeout(() => setManageSaved(false), 1500);
+    } catch (err) {
+      setManageError(err instanceof Error ? err.message : 'Save failed');
+    } finally {
+      setManageSaving(false);
+    }
+  }
+
+  async function toggleFreeze() {
+    if (!supabaseAdmin) return;
+    setFreezeSaving(true);
+    try {
+      const next = !isActive;
+      const { error } = await supabaseAdmin.from('customers').update({ is_active: next }).eq('id', c.id);
+      if (error) throw error;
+      setIsActive(next);
+      onChanged();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to update status');
+    } finally {
+      setFreezeSaving(false);
+    }
+  }
+
+  async function deletePortfolio() {
+    if (!supabaseAdmin) return;
+    const confirmed = confirm(
+      `Permanently delete "${c.name || c.subdomain}"'s portfolio? This removes their account, saved content, and edit links. This cannot be undone.`,
+    );
+    if (!confirmed) return;
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await supabaseAdmin.from('edit_tokens').delete().eq('customer_id', c.id);
+      try { await supabaseAdmin.from('portfolio_visits').delete().eq('customer_id', c.id); } catch { /* table may not exist yet */ }
+      await supabaseAdmin.from('portfolio_content').delete().eq('customer_id', c.id);
+      const { error } = await supabaseAdmin.from('customers').delete().eq('id', c.id);
+      if (error) throw error;
+      onChanged();
+      onClose();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Delete failed');
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   const rows: [string, string][] = [
     ['ID',         c.id],
     ['Name',       c.name || '—'],
     ['Email',      c.email || '—'],
     ['WhatsApp',   c.whatsapp || '—'],
-    ['Subdomain',  `${c.subdomain}.portzenx.com`],
-    ['Plan',       c.plan],
+    ['Subdomain',  `${c.subdomain}.md-hanif.xyz`],
     ['Template',   c.template_id || '—'],
-    ['Expires',    c.expires_at ? fmtDate(c.expires_at) : '—'],
     ['Joined',     fmtDate(c.created_at)],
   ];
 
@@ -353,13 +460,91 @@ function CustomerModal({ customer: c, onClose }: { customer: Customer; onClose: 
           </div>
         ))}
       </div>
-      <div className="mt-5 flex gap-2">
-        <PlanBadge plan={c.plan} />
-        <StatusBadge active={c.is_active} />
+      <div className="mt-5 flex items-center gap-2">
+        <PlanBadge plan={plan} />
+        <StatusBadge active={isActive} label={isActive ? 'Active' : 'Frozen'} />
+        <a
+          href={`https://${c.subdomain}.md-hanif.xyz`}
+          target="_blank"
+          rel="noreferrer"
+          className="ml-auto inline-flex items-center gap-1.5 text-xs font-semibold text-primary transition hover:text-forest"
+        >
+          Visit site
+          <ExternalLink size={13} />
+        </a>
+      </div>
+
+      {/* Manage: plan + expiry + freeze */}
+      <div className="mt-5 rounded-xl border border-line bg-ink/40 p-4">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-forest/50">Manage</p>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="mb-1 block text-xs text-forest/50">Plan</label>
+            <select
+              value={plan}
+              onChange={(e) => setPlan(e.target.value as Customer['plan'])}
+              className="w-full min-h-9 rounded-lg border border-line bg-panel px-2 text-sm text-forest outline-none focus:border-primary"
+            >
+              {PLAN_OPTIONS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-forest/50">Expires</label>
+            <input
+              type="date"
+              value={expiresAt}
+              onChange={(e) => setExpiresAt(e.target.value)}
+              className="w-full min-h-9 rounded-lg border border-line bg-panel px-2 text-sm text-forest outline-none focus:border-primary"
+            />
+          </div>
+        </div>
+        {manageError && <p className="mt-2 text-xs text-red-500">{manageError}</p>}
+        <div className="mt-3 flex gap-2">
+          <button
+            type="button"
+            onClick={() => void saveManage()}
+            disabled={manageSaving}
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-gradient-to-br from-forest to-primary px-3 py-2 text-xs font-semibold text-panel transition hover:brightness-110 disabled:opacity-60"
+          >
+            {manageSaved ? <Check size={13} /> : <Save size={13} />}
+            {manageSaving ? 'Saving…' : manageSaved ? 'Saved' : 'Save plan & expiry'}
+          </button>
+          <button
+            type="button"
+            onClick={() => void toggleFreeze()}
+            disabled={freezeSaving}
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-line px-3 py-2 text-xs font-semibold text-forest/70 transition hover:border-primary/70 hover:text-forest disabled:opacity-60"
+          >
+            {isActive ? <Snowflake size={13} /> : <Sun size={13} />}
+            {freezeSaving ? '…' : isActive ? 'Freeze' : 'Unfreeze'}
+          </button>
+        </div>
+      </div>
+
+      {/* Visits */}
+      <div className="mt-4 rounded-xl border border-line bg-ink/40 p-4">
+        <p className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-forest/50">
+          <TrendingUp size={13} />
+          Visits — last 7 days
+        </p>
+        {visitsLoading ? (
+          <p className="text-xs text-forest/40">Loading…</p>
+        ) : visits.length === 0 ? (
+          <p className="text-xs text-forest/40">No visits recorded yet.</p>
+        ) : (
+          <div className="space-y-1">
+            {visits.map((v) => (
+              <div key={v.day} className="flex items-center justify-between text-xs">
+                <span className="text-forest/60">{fmtDate(v.day)}</span>
+                <span className="font-semibold text-forest">{v.views}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Edit link section */}
-      <div className="mt-5 border-t border-line pt-5">
+      <div className="mt-4 border-t border-line pt-5">
         <button
           type="button"
           onClick={() => void getEditLink()}
@@ -384,6 +569,27 @@ function CustomerModal({ customer: c, onClose }: { customer: Customer; onClose: 
             </button>
           </div>
         )}
+      </div>
+
+      {/* Danger zone */}
+      <div className="mt-5 rounded-xl border border-red-500/25 bg-red-500/5 p-4">
+        <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-red-500">
+          <AlertTriangle size={13} />
+          Danger zone
+        </p>
+        <p className="mb-3 text-xs text-forest/55">
+          Permanently deletes this customer's account, saved content, and edit links. Cannot be undone.
+        </p>
+        {deleteError && <p className="mb-2 text-xs text-red-500">{deleteError}</p>}
+        <button
+          type="button"
+          onClick={() => void deletePortfolio()}
+          disabled={deleting}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-red-500/40 px-3 py-2 text-xs font-semibold text-red-500 transition hover:bg-red-500/10 disabled:opacity-60"
+        >
+          <Trash2 size={13} />
+          {deleting ? 'Deleting…' : 'Delete portfolio'}
+        </button>
       </div>
     </Modal>
   );
@@ -869,6 +1075,79 @@ function AdminPricing() {
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+// ── Revenue tab ───────────────────────────────────────────────────────────────
+const PLAN_PRICE: Record<Customer['plan'], number | null> = {
+  trial: 50,
+  six_months: 300,
+  one_year: 500,
+  custom: null,
+};
+
+function AdminRevenue() {
+  const { data: customers = [], isLoading } = useQuery({
+    queryKey: ['admin-customers'],
+    queryFn: async (): Promise<Customer[]> => {
+      if (!isSupabaseConfigured || !supabaseAdmin) return DEMO_CUSTOMERS;
+      const { data, error } = await supabaseAdmin.from('customers').select('*');
+      if (error) throw error;
+      return data as Customer[];
+    },
+  });
+
+  if (isLoading) return <Skeleton rows={4} />;
+
+  const active = customers.filter((c) => c.is_active);
+  const byPlan = PLAN_OPTIONS.map(({ value, label }) => {
+    const count = active.filter((c) => c.plan === value).length;
+    const price = PLAN_PRICE[value];
+    const subtotal = price !== null ? price * count : null;
+    return { value, label, count, price, subtotal };
+  });
+  const total = byPlan.reduce((sum, p) => sum + (p.subtotal ?? 0), 0);
+  const customCount = byPlan.find((p) => p.value === 'custom')?.count ?? 0;
+
+  return (
+    <div>
+      <div className="mb-4 rounded-2xl border border-line bg-panel p-6">
+        <p className="text-xs font-semibold uppercase tracking-wide text-forest/50">
+          Estimated value of active plans
+        </p>
+        <p className="mt-2 font-display text-4xl font-bold text-forest">৳{total.toLocaleString()}</p>
+        <p className="mt-2 text-xs text-forest/45">
+          Sum of listed plan prices across {active.length} active customer{active.length === 1 ? '' : 's'}.
+          Not a record of actual payments received — payments are confirmed manually over WhatsApp.
+          {customCount > 0 && ` Excludes ${customCount} Custom-plan customer${customCount === 1 ? '' : 's'} (no fixed price).`}
+        </p>
+      </div>
+
+      <div className="overflow-x-auto rounded-2xl border border-line bg-panel">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-line bg-ink/50">
+              <Th>Plan</Th>
+              <Th>Active customers</Th>
+              <Th>Unit price</Th>
+              <Th>Subtotal</Th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line">
+            {byPlan.map((p) => (
+              <tr key={p.value}>
+                <td className="py-3.5 pl-5 pr-3 font-semibold text-forest">{p.label}</td>
+                <td className="px-3 py-3.5 text-forest/70">{p.count}</td>
+                <td className="px-3 py-3.5 text-forest/70">{p.price !== null ? `৳${p.price}` : '—'}</td>
+                <td className="py-3.5 pl-3 pr-5 font-semibold text-forest">
+                  {p.subtotal !== null ? `৳${p.subtotal.toLocaleString()}` : '—'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );

@@ -1,0 +1,136 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
+import bcrypt from 'https://esm.sh/bcryptjs@2.4.3';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
+const SUBDOMAIN_RE = /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/;
+
+// Paid plans only — Custom has no fixed price and stays on the WhatsApp flow.
+const PLAN_AMOUNT: Record<string, number> = {
+  six_months: 300,
+  one_year: 500,
+};
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const serviceKey  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const siteUrl     = (Deno.env.get('SITE_URL') ?? 'https://md-hanif.xyz').replace(/\/$/, '');
+  const storeId     = Deno.env.get('SSLCOMMERZ_STORE_ID');
+  const storePasswd = Deno.env.get('SSLCOMMERZ_STORE_PASSWORD');
+  const sslBase     = Deno.env.get('SSLCOMMERZ_BASE_URL') ?? 'https://sandbox.sslcommerz.com';
+
+  if (!storeId || !storePasswd) {
+    return json({ error: 'Payment gateway is not configured yet. Please contact support on WhatsApp instead.' }, 503);
+  }
+
+  let body: Record<string, unknown>;
+  try { body = await req.json(); }
+  catch { return json({ error: 'Invalid request body' }, 400); }
+
+  const { name, email, subdomain, password, templateId, plan } = body as Record<string, string>;
+
+  if (!name?.trim() || name.trim().length < 2)
+    return json({ error: 'Name is required' }, 400);
+  if (!email?.includes('@'))
+    return json({ error: 'Valid email is required' }, 400);
+  if (!subdomain || subdomain.length < 3 || subdomain.length > 30 || !SUBDOMAIN_RE.test(subdomain))
+    return json({ error: 'Invalid subdomain' }, 400);
+  if (!password || password.length < 8)
+    return json({ error: 'Password must be at least 8 characters' }, 400);
+  const amount = PLAN_AMOUNT[plan];
+  if (!amount) return json({ error: 'Unsupported plan for online checkout' }, 400);
+
+  const sb = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+  const normalizedEmail = email.trim().toLowerCase();
+
+  // Email must have a verified OTP from the last 30 minutes, same as free signup.
+  const { data: otpRow } = await sb
+    .from('signup_otps')
+    .select('verified,created_at')
+    .eq('email', normalizedEmail)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const otpFresh = otpRow?.verified
+    && Date.now() - new Date(otpRow.created_at as string).getTime() < 30 * 60 * 1000;
+  if (!otpFresh) return json({ error: 'Please verify your email before continuing.' }, 403);
+
+  const { count } = await sb
+    .from('customers')
+    .select('id', { count: 'exact', head: true })
+    .eq('subdomain', subdomain);
+  if (count && count > 0) return json({ error: 'Subdomain already taken' }, 409);
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  const tranId        = `pz_${crypto.randomUUID().replace(/-/g, '')}`;
+
+  const { error: orderErr } = await sb.from('orders').insert({
+    tran_id:       tranId,
+    name:          name.trim(),
+    email:         normalizedEmail,
+    subdomain,
+    template_id:   templateId ?? 'photographer-red',
+    password_hash: passwordHash,
+    plan,
+    amount,
+    status:        'pending',
+  });
+  if (orderErr) return json({ error: orderErr.message }, 500);
+
+  const params = new URLSearchParams({
+    store_id:        storeId,
+    store_passwd:    storePasswd,
+    total_amount:    String(amount),
+    currency:        'BDT',
+    tran_id:         tranId,
+    success_url:     `${siteUrl}/checkout-result?tran_id=${tranId}&status=success`,
+    fail_url:        `${siteUrl}/checkout-result?tran_id=${tranId}&status=fail`,
+    cancel_url:      `${siteUrl}/checkout-result?tran_id=${tranId}&status=cancel`,
+    ipn_url:         `${supabaseUrl}/functions/v1/sslcommerz-ipn`,
+    shipping_method: 'NO',
+    product_name:    `PortZen ${plan} plan`,
+    product_category:'Portfolio hosting',
+    product_profile: 'general',
+    cus_name:        name.trim(),
+    cus_email:       normalizedEmail,
+    cus_add1:        'N/A',
+    cus_city:        'Dhaka',
+    cus_country:     'Bangladesh',
+    cus_phone:       'N/A',
+  });
+
+  let gatewayUrl: string;
+  try {
+    const sslRes = await fetch(`${sslBase}/gwprocess/v4/api.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+    });
+    const sslData = await sslRes.json() as { status?: string; GatewayPageURL?: string; failedreason?: string };
+    if (sslData.status !== 'SUCCESS' || !sslData.GatewayPageURL) {
+      await sb.from('orders').update({ status: 'failed' }).eq('tran_id', tranId);
+      return json({ error: sslData.failedreason ?? 'Payment gateway session could not be created.' }, 502);
+    }
+    gatewayUrl = sslData.GatewayPageURL;
+  } catch (e) {
+    await sb.from('orders').update({ status: 'failed' }).eq('tran_id', tranId);
+    return json({ error: 'Payment gateway request failed.' }, 502);
+  }
+
+  return json({ gatewayUrl, tranId });
+});

@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { AdminPortal } from './components/AdminPortal';
+import { CheckoutResult } from './components/CheckoutResult';
 import { EditPortal } from './components/EditPortal';
 import { Footer } from './components/Footer';
 import { Hero } from './components/Hero';
@@ -26,6 +27,7 @@ function App() {
   const isTemplateCatalog = path === '/templates';
   const isEditPortal = path === '/edit';
   const isSignupPortal = path === '/start';
+  const isCheckoutResult = path === '/checkout-result';
   const isPricingPage = path === '/pricing';
   const isAdminPortal = path === '/admin';
 
@@ -40,6 +42,8 @@ function App() {
           <EditPortal />
         ) : isSignupPortal ? (
           <SignupPortal />
+        ) : isCheckoutResult ? (
+          <CheckoutResult />
         ) : templateId ? (
           <TemplateDetail templateId={templateId} />
         ) : isTemplateCatalog ? (

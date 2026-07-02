@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { Check, Globe, MessageCircle, Palette, Rocket, Sparkles } from 'lucide-react';
+import { ArrowRight, Check, Globe, MessageCircle, Palette, Rocket, Sparkles } from 'lucide-react';
 
 interface PricingProps {
   whatsappHref: string;
@@ -9,13 +9,13 @@ const plans = [
   {
     id: 'trial' as const,
     name: 'Trial',
-    price: '৳50',
-    period: '1 month',
+    price: 'Free',
+    period: '7 days',
     features: [
       'Live custom subdomain',
       'Any one template',
       'Magic edit link',
-      'WhatsApp onboarding',
+      'Email verification, no card needed',
     ],
   },
   {
@@ -146,22 +146,30 @@ function PlanGrid({ whatsappHref }: PricingProps) {
               ))}
             </div>
 
-            <a
-              href={whatsappHref}
-              target="_blank"
-              rel="noreferrer"
-              className={clsx(
-                'mt-7 inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition hover:-translate-y-0.5',
-                plan.highlight
-                  ? 'bg-gradient-to-br from-forest to-primary text-panel'
-                  : plan.isCustom
+            {plan.isCustom ? (
+              <a
+                href={whatsappHref}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-7 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-forest to-primary px-4 py-3 text-sm font-semibold text-panel transition hover:-translate-y-0.5"
+              >
+                Discuss my needs
+                <MessageCircle size={16} />
+              </a>
+            ) : (
+              <a
+                href={`/start?plan=${plan.id}`}
+                className={clsx(
+                  'mt-7 inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition hover:-translate-y-0.5',
+                  plan.highlight
                     ? 'bg-gradient-to-br from-forest to-primary text-panel'
                     : 'border border-primary/60 text-primary hover:border-primary hover:bg-primary/10',
-              )}
-            >
-              {plan.isCustom ? 'Discuss my needs' : `Start with ${plan.name}`}
-              <MessageCircle size={16} />
-            </a>
+                )}
+              >
+                {`Start with ${plan.name}`}
+                <ArrowRight size={16} />
+              </a>
+            )}
           </article>
         ))}
       </div>
