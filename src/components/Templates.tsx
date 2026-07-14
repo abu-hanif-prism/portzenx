@@ -2,9 +2,10 @@ import clsx from 'clsx';
 import { ArrowLeft, ArrowRight, ExternalLink, MonitorSmartphone, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { TEMPLATE_REGISTRY } from '../../templates/registry';
+import { useCategories } from '../hooks/useCategories';
 import { useTemplate, useTemplates } from '../hooks/useTemplates';
 import { usePortZenStore } from '../store/usePortZenStore';
-import type { Template, TemplateCategory, TemplateFilter } from '../types';
+import type { Template } from '../types';
 
 function useBlobUrl(previewUrl: string | undefined): string | undefined {
   const [blobUrl, setBlobUrl] = useState<string>();
@@ -48,15 +49,21 @@ interface TemplateDetailProps {
   templateId: string;
 }
 
-const filters: TemplateFilter[] = ['All', 'Developer', 'Designer', 'Medical', 'Student', 'Creative'];
+// Category is now an admin-editable free string (not a closed set), so tones
+// are picked deterministically by hashing the name instead of a fixed map.
+const CATEGORY_TONES = [
+  'from-primary/12 to-sage/8',
+  'from-sage/18 to-[#B1D3B9]/12',
+  'from-[#B1D3B9]/20 to-primary/8',
+  'from-sage/12 to-primary/6',
+  'from-primary/18 to-sage/12',
+];
 
-const categoryTone: Record<TemplateCategory, string> = {
-  Developer: 'from-primary/12 to-sage/8',
-  Designer: 'from-sage/18 to-[#B1D3B9]/12',
-  Medical: 'from-[#B1D3B9]/20 to-primary/8',
-  Student: 'from-sage/12 to-primary/6',
-  Creative: 'from-primary/18 to-sage/12',
-};
+function categoryTone(category: string): string {
+  let hash = 0;
+  for (let i = 0; i < category.length; i += 1) hash = (hash * 31 + category.charCodeAt(i)) | 0;
+  return CATEGORY_TONES[Math.abs(hash) % CATEGORY_TONES.length];
+}
 
 export function TopTemplates() {
   const templatesQuery = useTemplates('All');
@@ -100,6 +107,8 @@ export function Templates() {
   const setActiveFilter = usePortZenStore((state) => state.setActiveFilter);
   const templatesQuery = useTemplates(activeFilter);
   const templates = templatesQuery.data ?? [];
+  const categoriesQuery = useCategories();
+  const filters: string[] = ['All', ...(categoriesQuery.data ?? []).map((c) => c.label)];
 
   return (
     <section id="templates" className="mx-auto max-w-7xl px-4 py-20 sm:px-7">
@@ -176,7 +185,7 @@ export function TemplateDetail({ templateId }: TemplateDetailProps) {
           <div
             className={clsx(
               'overflow-hidden rounded-2xl border border-line bg-gradient-to-br p-3 shadow-[0_30px_90px_rgba(101,146,135,0.18)]',
-              categoryTone[template.category],
+              categoryTone(template.category),
             )}
           >
             <div className="overflow-hidden rounded-xl border border-line/50 bg-ink">
@@ -297,7 +306,7 @@ function TemplateCard({ template }: { template: Template }) {
         href={`/templates/${template.id}`}
         className={clsx(
           'relative block aspect-[16/9] overflow-hidden rounded-xl bg-gradient-to-br',
-          categoryTone[template.category],
+          categoryTone(template.category),
         )}
       >
         <TemplatePreviewMedia template={template} mode="card" />

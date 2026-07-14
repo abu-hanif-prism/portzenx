@@ -93,6 +93,7 @@ Deno.serve(async (req) => {
       is_active:     true,
       password_hash: order.password_hash,
       expires_at:    expiresAt,
+      user_id:       order.user_id,
     })
     .select('id')
     .single();

@@ -2,15 +2,15 @@ import { useState, useEffect, FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  AlertTriangle, ArrowLeft, Check, Copy, DollarSign,
+  AlertTriangle, ArrowLeft, Check, ChevronDown, ChevronRight, Copy, DollarSign,
   Edit2, ExternalLink, Eye, EyeOff, LayoutTemplate, Link2, Plus,
-  RefreshCw, Save, Search, Shield, Snowflake, Sun, Trash2, TrendingUp, Upload, Users, X,
+  RefreshCw, Save, Search, Shield, Snowflake, Sun, Tags, Trash2, TrendingUp, Upload, Users, X,
 } from 'lucide-react';
+import { useCategories } from '../hooks/useCategories';
 import { isSupabaseConfigured, supabase, supabaseAdmin } from '../lib/supabase';
-import type { Template, TemplateCategory } from '../types';
+import type { Profile, Template } from '../types';
 
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD ?? 'admin123';
-const CATEGORIES: TemplateCategory[] = ['Developer', 'Designer', 'Medical', 'Student', 'Creative'];
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface Customer {
@@ -24,6 +24,7 @@ interface Customer {
   is_active: boolean;
   created_at: string;
   expires_at?: string;
+  user_id: string | null;
 }
 
 interface PricingPlan {
@@ -183,9 +184,19 @@ function Dashboard() {
 }
 
 // ── Users tab ─────────────────────────────────────────────────────────────────
+interface CustomerGroup {
+  key: string;
+  profile: Profile | null;
+  name: string;
+  email: string;
+  phone: string;
+  sites: Customer[];
+}
+
 function AdminUsers() {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Customer | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const { data: customers = [], isLoading, refetch } = useQuery({
     queryKey: ['admin-customers'],
@@ -200,13 +211,57 @@ function AdminUsers() {
     },
   });
 
-  const filtered = customers.filter(
-    (c) =>
-      !search ||
-      c.name?.toLowerCase().includes(search.toLowerCase()) ||
-      c.email?.toLowerCase().includes(search.toLowerCase()) ||
-      c.subdomain?.toLowerCase().includes(search.toLowerCase()),
-  );
+  const { data: profiles = [] } = useQuery({
+    queryKey: ['admin-profiles'],
+    queryFn: async (): Promise<Profile[]> => {
+      if (!isSupabaseConfigured || !supabaseAdmin) return [];
+      const { data, error } = await supabaseAdmin.from('profiles').select('*');
+      if (error) throw error;
+      return data as Profile[];
+    },
+  });
+
+  const profileById = new Map(profiles.map((p) => [p.id, p]));
+
+  const groupMap = new Map<string, { profile: Profile | null; sites: Customer[] }>();
+  for (const c of customers) {
+    const key = c.user_id ?? 'legacy';
+    if (!groupMap.has(key)) {
+      groupMap.set(key, { profile: c.user_id ? profileById.get(c.user_id) ?? null : null, sites: [] });
+    }
+    groupMap.get(key)!.sites.push(c);
+  }
+  // Profiles with zero sites (signed up, never bought/created one) still show up.
+  for (const p of profiles) {
+    if (!groupMap.has(p.id)) groupMap.set(p.id, { profile: p, sites: [] });
+  }
+
+  const groups: CustomerGroup[] = Array.from(groupMap.entries())
+    .map(([key, g]) => ({
+      key,
+      profile: g.profile,
+      name: g.profile?.name || g.sites[0]?.name || '—',
+      email: g.sites[0]?.email || '—',
+      phone: g.profile?.phone || '—',
+      sites: g.sites,
+    }))
+    .sort((a, b) => (a.key === 'legacy' ? 1 : b.key === 'legacy' ? -1 : 0));
+
+  const filtered = groups.filter((g) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return g.name.toLowerCase().includes(q)
+      || g.email.toLowerCase().includes(q)
+      || g.sites.some((s) => s.subdomain?.toLowerCase().includes(q));
+  });
+
+  function toggle(key: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  }
 
   return (
     <div>
@@ -228,7 +283,7 @@ function AdminUsers() {
           <RefreshCw size={15} />
           Refresh
         </button>
-        <span className="ml-auto text-sm text-forest/45">{filtered.length} customers</span>
+        <span className="ml-auto text-sm text-forest/45">{filtered.length} customers · {customers.length} sites</span>
       </div>
 
       {isLoading ? (
@@ -236,52 +291,82 @@ function AdminUsers() {
       ) : filtered.length === 0 ? (
         <EmptyState icon={Users} title={search ? 'No matching customers' : 'No customers yet'} />
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-line bg-panel">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-line bg-ink/50">
-                <Th>Customer</Th>
-                <Th>Subdomain</Th>
-                <Th>Plan</Th>
-                <Th>Template</Th>
-                <Th>Status</Th>
-                <Th>Expires</Th>
-                <Th>Joined</Th>
-                <Th></Th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {filtered.map((c) => (
-                <tr key={c.id} className="transition hover:bg-ink/40">
-                  <td className="py-3.5 pl-5 pr-3">
-                    <div className="font-semibold text-forest">{c.name || '—'}</div>
-                    <div className="text-xs text-forest/50">{c.email || '—'}</div>
-                  </td>
-                  <td className="px-3 py-3.5">
-                    <span className="rounded-md bg-primary/10 px-2 py-1 font-mono text-xs text-primary">
-                      {c.subdomain}.portzen.xyz
-                    </span>
-                  </td>
-                  <td className="px-3 py-3.5"><PlanBadge plan={c.plan} /></td>
-                  <td className="px-3 py-3.5 font-mono text-xs text-forest/55">{c.template_id || '—'}</td>
-                  <td className="px-3 py-3.5"><StatusBadge active={c.is_active} /></td>
-                  <td className="px-3 py-3.5 text-xs text-forest/50">
-                    {c.expires_at ? fmtDate(c.expires_at) : '—'}
-                  </td>
-                  <td className="px-3 py-3.5 text-xs text-forest/50">{fmtDate(c.created_at)}</td>
-                  <td className="py-3.5 pl-3 pr-5">
-                    <button
-                      type="button"
-                      onClick={() => setSelected(c)}
-                      className="text-xs font-semibold text-primary transition hover:text-forest"
-                    >
-                      Details
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-2">
+          {filtered.map((g) => {
+            const isOpen = expanded.has(g.key);
+            const isLegacy = g.key === 'legacy';
+            return (
+              <div key={g.key} className="overflow-hidden rounded-2xl border border-line bg-panel">
+                <button
+                  type="button"
+                  onClick={() => toggle(g.key)}
+                  className="flex w-full items-center gap-3 px-5 py-3.5 text-left transition hover:bg-ink/40"
+                >
+                  {isOpen ? <ChevronDown size={16} className="shrink-0 text-forest/40" /> : <ChevronRight size={16} className="shrink-0 text-forest/40" />}
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold text-forest">
+                      {isLegacy ? 'No linked account' : g.name}
+                    </div>
+                    <div className="text-xs text-forest/50">
+                      {g.email}{g.phone !== '—' ? ` · ${g.phone}` : ''}
+                    </div>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                    {g.sites.length} site{g.sites.length === 1 ? '' : 's'}
+                  </span>
+                </button>
+
+                {isOpen && (
+                  g.sites.length === 0 ? (
+                    <div className="border-t border-line px-5 py-4 text-xs text-forest/40">No sites yet.</div>
+                  ) : (
+                    <div className="overflow-x-auto border-t border-line">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-line bg-ink/50">
+                            <Th>Subdomain</Th>
+                            <Th>Plan</Th>
+                            <Th>Template</Th>
+                            <Th>Status</Th>
+                            <Th>Expires</Th>
+                            <Th>Joined</Th>
+                            <Th></Th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-line">
+                          {g.sites.map((c) => (
+                            <tr key={c.id} className="transition hover:bg-ink/40">
+                              <td className="px-3 py-3.5">
+                                <span className="rounded-md bg-primary/10 px-2 py-1 font-mono text-xs text-primary">
+                                  {c.subdomain}.portzenx.com
+                                </span>
+                              </td>
+                              <td className="px-3 py-3.5"><PlanBadge plan={c.plan} /></td>
+                              <td className="px-3 py-3.5 font-mono text-xs text-forest/55">{c.template_id || '—'}</td>
+                              <td className="px-3 py-3.5"><StatusBadge active={c.is_active} /></td>
+                              <td className="px-3 py-3.5 text-xs text-forest/50">
+                                {c.expires_at ? fmtDate(c.expires_at) : '—'}
+                              </td>
+                              <td className="px-3 py-3.5 text-xs text-forest/50">{fmtDate(c.created_at)}</td>
+                              <td className="py-3.5 pl-3 pr-5">
+                                <button
+                                  type="button"
+                                  onClick={() => setSelected(c)}
+                                  className="text-xs font-semibold text-primary transition hover:text-forest"
+                                >
+                                  Details
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -598,6 +683,7 @@ function CustomerModal({
 // ── Templates tab ─────────────────────────────────────────────────────────────
 function AdminTemplates() {
   const [showAdd, setShowAdd] = useState(false);
+  const [showCategories, setShowCategories] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: templates = [], isLoading, refetch } = useQuery({
@@ -642,6 +728,14 @@ function AdminTemplates() {
         >
           <RefreshCw size={14} />
           Refresh
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowCategories(true)}
+          className="inline-flex items-center gap-2 rounded-xl border border-line px-3 py-2 text-sm font-semibold text-forest/65 transition hover:border-primary/70 hover:text-forest"
+        >
+          <Tags size={14} />
+          Manage Categories
         </button>
         <button
           type="button"
@@ -738,6 +832,10 @@ function AdminTemplates() {
           }}
         />
       )}
+
+      {showCategories && (
+        <CategoriesModal onClose={() => setShowCategories(false)} />
+      )}
     </div>
   );
 }
@@ -754,9 +852,11 @@ function titleify(slug: string) {
 }
 
 function AddTemplateModal({ onClose }: { onClose: () => void }) {
+  const categoriesQuery = useCategories();
+  const categories = categoriesQuery.data ?? [];
   const [file, setFile] = useState<File | null>(null);
   const [form, setForm] = useState({
-    id: '', name: '', category: 'Developer' as TemplateCategory, tags: '',
+    id: '', name: '', category: '', tags: '',
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -791,10 +891,13 @@ function AddTemplateModal({ onClose }: { onClose: () => void }) {
 
       const { data: { publicUrl } } = supabaseAdmin.storage.from('templates').getPublicUrl(path);
 
+      const category = form.category || categories[0]?.id;
+      if (!category) throw new Error('No categories exist yet — add one first');
+
       const { error: dbErr } = await supabaseAdmin.from('templates').insert({
         id:          form.id.trim(),
         name:        form.name.trim(),
-        category:    form.category,
+        category,
         preview_url: publicUrl,
         tags:        form.tags.split(',').map((t) => t.trim()).filter(Boolean),
         is_active:   true,
@@ -872,11 +975,11 @@ function AddTemplateModal({ onClose }: { onClose: () => void }) {
         <div>
           <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-forest/50">Category</label>
           <select
-            value={form.category}
-            onChange={(e) => setForm({ ...form, category: e.target.value as TemplateCategory })}
+            value={form.category || categories[0]?.id || ''}
+            onChange={(e) => setForm({ ...form, category: e.target.value })}
             className="w-full min-h-10 rounded-xl border border-line bg-ink px-4 text-sm text-forest outline-none focus:border-primary"
           >
-            {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+            {categories.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
           </select>
         </div>
         <Field label="Tags (comma-separated)" value={form.tags} onChange={(v) => setForm({ ...form, tags: v })} placeholder="Photography, Teal, Gallery" />
@@ -890,6 +993,111 @@ function AddTemplateModal({ onClose }: { onClose: () => void }) {
           {saving ? 'Uploading…' : 'Upload & Add Template'}
         </button>
       </div>
+    </Modal>
+  );
+}
+
+function CategoriesModal({ onClose }: { onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const categoriesQuery = useCategories();
+  const categories = categoriesQuery.data ?? [];
+  const [label, setLabel] = useState('');
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  async function addCategory() {
+    const trimmed = label.trim();
+    if (!trimmed) return;
+    if (!supabaseAdmin) { setError('Admin client not configured'); return; }
+    setError('');
+    setSaving(true);
+    try {
+      const { error: insertErr } = await supabaseAdmin.from('template_categories').insert({
+        id: trimmed,
+        label: trimmed,
+        sort_order: categories.length + 1,
+      });
+      if (insertErr) throw insertErr;
+      setLabel('');
+      await queryClient.invalidateQueries({ queryKey: ['categories'] });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not add category');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function deleteCategory(id: string) {
+    if (!supabaseAdmin) return;
+    if (!confirm(`Delete category "${id}"?`)) return;
+    setError('');
+    try {
+      const { error: deleteErr } = await supabaseAdmin.from('template_categories').delete().eq('id', id);
+      if (deleteErr) throw deleteErr;
+      await queryClient.invalidateQueries({ queryKey: ['categories'] });
+    } catch (err) {
+      const message = err instanceof Error ? err.message.toLowerCase() : '';
+      if (message.includes('foreign key') || message.includes('violates')) {
+        setError(`"${id}" is still used by one or more templates — reassign or delete those templates first.`);
+      } else {
+        setError(err instanceof Error ? err.message : 'Could not delete category');
+      }
+    }
+  }
+
+  return (
+    <Modal onClose={onClose} width="max-w-sm">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="font-display text-xl font-bold text-forest">Manage Categories</h2>
+        <button type="button" onClick={onClose} className="text-forest/40 transition hover:text-forest">
+          <X size={20} />
+        </button>
+      </div>
+
+      {error && (
+        <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
+          {error}
+        </div>
+      )}
+
+      <div className="mb-4 flex gap-2">
+        <input
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          placeholder="New category name"
+          className="w-full min-h-10 rounded-xl border border-line bg-ink px-4 text-sm text-forest outline-none transition placeholder:text-forest/40 focus:border-primary"
+        />
+        <button
+          type="button"
+          onClick={() => void addCategory()}
+          disabled={saving || !label.trim()}
+          className="shrink-0 rounded-xl bg-gradient-to-br from-forest to-primary px-4 text-sm font-semibold text-panel transition hover:brightness-110 disabled:opacity-60"
+        >
+          Add
+        </button>
+      </div>
+
+      {categoriesQuery.isLoading ? (
+        <Skeleton rows={3} />
+      ) : categories.length === 0 ? (
+        <p className="text-sm text-forest/45">No categories yet — add one above.</p>
+      ) : (
+        <div className="divide-y divide-line overflow-hidden rounded-xl border border-line">
+          {categories.map((c) => (
+            <div key={c.id} className="flex items-center justify-between px-4 py-2.5">
+              <span className="text-sm font-medium text-forest">{c.label}</span>
+              <button
+                type="button"
+                onClick={() => void deleteCategory(c.id)}
+                className="text-forest/40 transition hover:text-red-500"
+                aria-label={`Delete ${c.label}`}
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </Modal>
   );
 }
@@ -1248,9 +1456,9 @@ function fmtDate(iso: string) {
 
 // Demo data shown when Supabase is not configured
 const DEMO_CUSTOMERS: Customer[] = [
-  { id: 'cust_001', name: 'Ayesha Rahman',  email: 'ayesha@email.com', whatsapp: '+8801712345678', subdomain: 'ayesha', plan: 'six_months', template_id: 'photographer-red',    is_active: true,  created_at: '2026-03-15T10:00:00Z', expires_at: '2026-09-15T10:00:00Z' },
-  { id: 'cust_002', name: 'Karim Uddin',    email: 'karim@email.com',  whatsapp: '+8801812345678', subdomain: 'karim',  plan: 'trial',      template_id: 'photographer-rose',   is_active: true,  created_at: '2026-04-01T10:00:00Z', expires_at: '2026-05-01T10:00:00Z' },
-  { id: 'cust_003', name: 'Nadia Islam',    email: 'nadia@email.com',  whatsapp: '+8801912345678', subdomain: 'nadia',  plan: 'one_year',   template_id: 'photographer-forest', is_active: true,  created_at: '2026-01-10T10:00:00Z', expires_at: '2027-01-10T10:00:00Z' },
-  { id: 'cust_004', name: 'Rafiq Hassan',   email: 'rafiq@email.com',  whatsapp: '+8801612345678', subdomain: 'rafiq',  plan: 'custom',     template_id: 'photographer-red',    is_active: false, created_at: '2025-12-01T10:00:00Z' },
-  { id: 'cust_005', name: 'Sadia Khanam',   email: 'sadia@email.com',  whatsapp: '+8801512345678', subdomain: 'sadia',  plan: 'six_months', template_id: 'photographer-rose',   is_active: true,  created_at: '2026-05-20T10:00:00Z', expires_at: '2026-11-20T10:00:00Z' },
+  { id: 'cust_001', name: 'Ayesha Rahman',  email: 'ayesha@email.com', whatsapp: '+8801712345678', subdomain: 'ayesha', plan: 'six_months', template_id: 'photographer-red',    is_active: true,  created_at: '2026-03-15T10:00:00Z', expires_at: '2026-09-15T10:00:00Z', user_id: null },
+  { id: 'cust_002', name: 'Karim Uddin',    email: 'karim@email.com',  whatsapp: '+8801812345678', subdomain: 'karim',  plan: 'trial',      template_id: 'photographer-rose',   is_active: true,  created_at: '2026-04-01T10:00:00Z', expires_at: '2026-05-01T10:00:00Z', user_id: null },
+  { id: 'cust_003', name: 'Nadia Islam',    email: 'nadia@email.com',  whatsapp: '+8801912345678', subdomain: 'nadia',  plan: 'one_year',   template_id: 'photographer-forest', is_active: true,  created_at: '2026-01-10T10:00:00Z', expires_at: '2027-01-10T10:00:00Z', user_id: null },
+  { id: 'cust_004', name: 'Rafiq Hassan',   email: 'rafiq@email.com',  whatsapp: '+8801612345678', subdomain: 'rafiq',  plan: 'custom',     template_id: 'photographer-red',    is_active: false, created_at: '2025-12-01T10:00:00Z', user_id: null },
+  { id: 'cust_005', name: 'Sadia Khanam',   email: 'sadia@email.com',  whatsapp: '+8801512345678', subdomain: 'sadia',  plan: 'six_months', template_id: 'photographer-rose',   is_active: true,  created_at: '2026-05-20T10:00:00Z', expires_at: '2026-11-20T10:00:00Z', user_id: null },
 ];

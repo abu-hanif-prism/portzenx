@@ -1,9 +1,10 @@
 import { useEffect, useMemo } from 'react';
 import { AdminPortal } from './components/AdminPortal';
 import { CheckoutResult } from './components/CheckoutResult';
-import { EditPortal } from './components/EditPortal';
+import { CustomerDashboard } from './components/CustomerDashboard';
 import { Footer } from './components/Footer';
 import { Hero } from './components/Hero';
+import { LoginPortal } from './components/LoginPortal';
 import { Navbar } from './components/Navbar';
 import { Pricing, PricingPage } from './components/Pricing';
 import { SignupPortal } from './components/SignupPortal';
@@ -25,7 +26,8 @@ function App() {
   const path = window.location.pathname;
   const templateId = path.startsWith('/templates/') ? decodeURIComponent(path.replace('/templates/', '')) : undefined;
   const isTemplateCatalog = path === '/templates';
-  const isEditPortal = path === '/edit';
+  const isLoginPortal = path === '/login';
+  const isDashboard = path === '/dashboard';
   const isSignupPortal = path === '/start';
   const isCheckoutResult = path === '/checkout-result';
   const isPricingPage = path === '/pricing';
@@ -38,8 +40,10 @@ function App() {
       <main className="relative z-10">
         {isAdminPortal ? (
           <AdminPortal />
-        ) : isEditPortal ? (
-          <EditPortal />
+        ) : isLoginPortal ? (
+          <LoginPortal />
+        ) : isDashboard ? (
+          <CustomerDashboard />
         ) : isSignupPortal ? (
           <SignupPortal />
         ) : isCheckoutResult ? (

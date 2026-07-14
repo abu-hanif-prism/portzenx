@@ -1,0 +1,99 @@
+{
+  "id": "cse-gitlog",
+  "sections": [
+    {
+      "id": "nav",
+      "label": "Navigation",
+      "fields": [
+        {"key": "logo_text", "type": "text", "label": "Logo text", "source": "flat"}
+      ]
+    },
+    {
+      "id": "hero",
+      "label": "Hero",
+      "fields": [
+        {"key": "hero_eyebrow", "type": "text", "label": "Eyebrow comment", "source": "flat"},
+        {"key": "hero_name", "type": "text", "label": "Headline — your name", "source": "flat"},
+        {"key": "hero_headline", "type": "text", "label": "Headline — middle", "source": "extra"},
+        {"key": "hero_name_italic", "type": "text", "label": "Headline — highlighted word", "source": "flat"},
+        {"key": "hero_headline_tail", "type": "text", "label": "Headline — ending", "source": "extra"},
+        {"key": "hero_subtitle", "type": "textarea", "label": "Subtitle", "source": "flat"},
+        {"key": "hero_sig_role", "type": "text", "label": "Code signature — role", "source": "extra"},
+        {"key": "hero_cta1_label", "type": "text", "label": "Primary button label", "source": "flat"},
+        {"key": "hero_cta1_href", "type": "link", "label": "Primary button link", "source": "flat"},
+        {"key": "hero_cta2_label", "type": "text", "label": "Secondary button label", "source": "flat"},
+        {"key": "hero_cta2_href", "type": "link", "label": "Secondary button link", "source": "flat"},
+        {"key": "status_items", "type": "repeater", "label": "Status bar items", "source": "extra", "items": [
+          {"key": "label", "type": "text", "label": "Label"},
+          {"key": "value", "type": "text", "label": "Value"}
+        ]}
+      ]
+    },
+    {
+      "id": "projects",
+      "label": "Projects",
+      "fields": [
+        {"key": "projects_title", "type": "text", "label": "Section title", "source": "extra"},
+        {"key": "projects_path", "type": "text", "label": "Section caption", "source": "extra"},
+        {"key": "projects", "type": "repeater", "label": "Projects", "source": "extra", "items": [
+          {"key": "type", "type": "text", "label": "Category tag"},
+          {"key": "title", "type": "text", "label": "Project name"},
+          {"key": "description", "type": "textarea", "label": "Description"},
+          {"key": "stack", "type": "text", "label": "Tech stack (separate with ·)"},
+          {"key": "link1_label", "type": "text", "label": "Link 1 label"},
+          {"key": "link1_href", "type": "link", "label": "Link 1 URL"},
+          {"key": "link2_label", "type": "text", "label": "Link 2 label"},
+          {"key": "link2_href", "type": "link", "label": "Link 2 URL"}
+        ]}
+      ]
+    },
+    {
+      "id": "skills",
+      "label": "Stack",
+      "fields": [
+        {"key": "skills_title", "type": "text", "label": "Section title", "source": "extra"},
+        {"key": "skills_path", "type": "text", "label": "Section caption", "source": "extra"},
+        {"key": "skills", "type": "repeater", "label": "Skill groups", "source": "extra", "items": [
+          {"key": "group", "type": "text", "label": "Group name"},
+          {"key": "list", "type": "textarea", "label": "Skills (one per line)"}
+        ]}
+      ]
+    },
+    {
+      "id": "timeline",
+      "label": "Timeline",
+      "fields": [
+        {"key": "timeline_title", "type": "text", "label": "Section title", "source": "extra"},
+        {"key": "timeline_path", "type": "text", "label": "Section caption", "source": "extra"},
+        {"key": "timeline", "type": "repeater", "label": "Commits (newest first)", "source": "extra", "items": [
+          {"key": "hash", "type": "text", "label": "Commit hash"},
+          {"key": "tag", "type": "text", "label": "Tag (leave empty to hide)"},
+          {"key": "message", "type": "text", "label": "Message"},
+          {"key": "meta", "type": "text", "label": "Meta line"}
+        ]}
+      ]
+    },
+    {
+      "id": "contact",
+      "label": "Contact",
+      "fields": [
+        {"key": "contact_heading", "type": "text", "label": "Heading", "source": "flat"},
+        {"key": "contact_subtext", "type": "textarea", "label": "Subtext", "source": "flat"},
+        {"key": "contact_cta_label", "type": "text", "label": "Button label", "source": "extra"},
+        {"key": "contact_cta_href", "type": "link", "label": "Button link / email", "source": "extra"},
+        {"key": "contact_links", "type": "repeater", "label": "Contact links", "source": "flat", "items": [
+          {"key": "label", "type": "text", "label": "Label"},
+          {"key": "href", "type": "link", "label": "Link / value"}
+        ]}
+      ]
+    },
+    {
+      "id": "footer",
+      "label": "Footer",
+      "fields": [
+        {"key": "footer_name", "type": "text", "label": "Footer name", "source": "flat"},
+        {"key": "footer_status", "type": "text", "label": "Footer status", "source": "flat"}
+      ]
+    }
+  ]
+}

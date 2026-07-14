@@ -1,0 +1,99 @@
+{
+  "id": "atelier-noir",
+  "sections": [
+    {
+      "id": "nav",
+      "label": "Navigation",
+      "fields": [
+        {"key": "logo_text", "type": "text", "label": "Logo / Label", "source": "flat"}
+      ]
+    },
+    {
+      "id": "hero",
+      "label": "Hero",
+      "fields": [
+        {"key": "hero_eyebrow", "type": "text", "label": "Eyebrow", "source": "flat"},
+        {"key": "hero_name", "type": "text", "label": "Name", "source": "flat"},
+        {"key": "hero_name_italic", "type": "text", "label": "Name (italic accent)", "source": "flat"},
+        {"key": "hero_subtitle", "type": "textarea", "label": "Subtitle", "source": "flat"},
+        {"key": "hero_cta1_label", "type": "text", "label": "Primary button label", "source": "flat"},
+        {"key": "hero_cta1_href", "type": "link", "label": "Primary button link", "source": "flat"},
+        {"key": "hero_cta2_label", "type": "text", "label": "Secondary button label", "source": "flat"},
+        {"key": "hero_cta2_href", "type": "link", "label": "Secondary button link", "source": "flat"},
+        {"key": "hero_images", "type": "repeater", "label": "Hero images", "source": "flat", "items": [
+          {"key": "image", "type": "image", "label": "Image"}
+        ]}
+      ]
+    },
+    {
+      "id": "about",
+      "label": "About",
+      "fields": [
+        {"key": "about_image", "type": "image", "label": "Portrait", "source": "flat"},
+        {"key": "about_title", "type": "text", "label": "Title", "source": "flat"},
+        {"key": "about_title_italic", "type": "text", "label": "Title (italic accent)", "source": "flat"},
+        {"key": "about_bio_1", "type": "textarea", "label": "Bio — opening", "source": "flat"},
+        {"key": "about_quote", "type": "textarea", "label": "Quote / statement", "source": "flat"},
+        {"key": "about_bio_2", "type": "textarea", "label": "Bio — continued", "source": "flat"},
+        {"key": "stats", "type": "repeater", "label": "Stats", "source": "flat", "items": [
+          {"key": "value", "type": "text", "label": "Value"},
+          {"key": "label", "type": "text", "label": "Label"}
+        ]}
+      ]
+    },
+    {
+      "id": "collections",
+      "label": "Collections",
+      "fields": [
+        {"key": "collections", "type": "repeater", "label": "Collections", "source": "extra", "items": [
+          {"key": "image", "type": "image", "label": "Image"},
+          {"key": "season", "type": "text", "label": "Season / Year"},
+          {"key": "name", "type": "text", "label": "Collection name"},
+          {"key": "description", "type": "textarea", "label": "Description"},
+          {"key": "link", "type": "link", "label": "Link"}
+        ]}
+      ]
+    },
+    {
+      "id": "lookbook",
+      "label": "Lookbook",
+      "fields": [
+        {"key": "gallery_images", "type": "repeater", "label": "Lookbook images", "source": "flat", "items": [
+          {"key": "image", "type": "image", "label": "Image"},
+          {"key": "caption", "type": "text", "label": "Caption"}
+        ]}
+      ]
+    },
+    {
+      "id": "services",
+      "label": "Services",
+      "fields": [
+        {"key": "services", "type": "repeater", "label": "Services", "source": "flat", "items": [
+          {"key": "title", "type": "text", "label": "Title"},
+          {"key": "description", "type": "textarea", "label": "Description"}
+        ]}
+      ]
+    },
+    {
+      "id": "contact",
+      "label": "Contact",
+      "fields": [
+        {"key": "contact_heading", "type": "text", "label": "Heading", "source": "flat"},
+        {"key": "contact_heading_italic", "type": "text", "label": "Heading (italic accent)", "source": "flat"},
+        {"key": "contact_subtext", "type": "textarea", "label": "Subtext", "source": "flat"},
+        {"key": "contact_links", "type": "repeater", "label": "Contact links", "source": "flat", "items": [
+          {"key": "label", "type": "text", "label": "Label"},
+          {"key": "href", "type": "link", "label": "Link / value"}
+        ]}
+      ]
+    },
+    {
+      "id": "footer",
+      "label": "Footer",
+      "fields": [
+        {"key": "footer_name", "type": "text", "label": "Footer name", "source": "flat"},
+        {"key": "footer_status", "type": "text", "label": "Footer status", "source": "flat"}
+      ]
+    }
+  ]
+}

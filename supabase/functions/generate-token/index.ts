@@ -3,8 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 interface CustomerRecord {
   id: string;
   subdomain: string;
-  email: string;
-  expires_at: string;
+  user_id: string | null;
 }
 
 const corsHeaders = {
@@ -26,10 +25,6 @@ function createToken() {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
-function isUuid(value: string) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
-}
-
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -40,62 +35,40 @@ Deno.serve(async (request) => {
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   const editSiteUrl = Deno.env.get('EDIT_SITE_URL') ?? 'https://edit.portzenx.com';
 
-  if (!supabaseUrl || !serviceRoleKey) {
+  if (!supabaseUrl || !anonKey || !serviceRoleKey) {
     return json({ error: 'Server is missing Supabase configuration.' }, 500);
   }
 
-  const { customerId, email } = await request.json().catch(() => ({ customerId: '', email: '' }));
+  const authHeader = request.headers.get('Authorization') ?? '';
+  const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
+  const { data: { user }, error: userErr } = await userClient.auth.getUser();
+  if (userErr || !user) return json({ error: 'Please log in to get an edit link.' }, 401);
+
+  const { customerId } = await request.json().catch(() => ({ customerId: '' }));
   if (typeof customerId !== 'string' || customerId.trim().length === 0) {
-    return json({ error: 'Customer ID or subdomain is required.' }, 400);
-  }
-  if (typeof email !== 'string' || !email.includes('@')) {
-    return json({ error: 'Valid email is required.' }, 400);
+    return json({ error: 'Customer ID is required.' }, 400);
   }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false },
   });
 
-  const normalizedEmail = email.trim().toLowerCase();
-  const accountId = customerId.trim();
-  const customerQuery = supabase
+  const { data: customer, error } = await supabase
     .from('customers')
-    .select('id,subdomain,email,expires_at')
-    .gt('expires_at', new Date().toISOString());
-
-  const { data: customer, error } = isUuid(accountId)
-    ? await customerQuery.eq('id', accountId).maybeSingle<CustomerRecord>()
-    : await customerQuery.eq('subdomain', accountId).maybeSingle<CustomerRecord>();
+    .select('id,subdomain,user_id')
+    .eq('id', customerId.trim())
+    .maybeSingle<CustomerRecord>();
 
   if (error) {
     return json({ error: error.message }, 500);
   }
 
-  if (!customer) {
-    return json({ error: 'Invalid customer ID or expired subscription.' }, 401);
-  }
-
-  if (customer.email?.trim().toLowerCase() !== normalizedEmail) {
-    return json({ error: 'That email does not match this account.' }, 401);
-  }
-
-  // Email must have a verified OTP from the last 30 minutes, same freshness
-  // window used at signup — replaces the old password check.
-  const { data: otpRow } = await supabase
-    .from('signup_otps')
-    .select('verified,created_at')
-    .eq('email', normalizedEmail)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const otpFresh = otpRow?.verified
-    && Date.now() - new Date(otpRow.created_at as string).getTime() < 30 * 60 * 1000;
-  if (!otpFresh) {
-    return json({ error: 'Please verify your email before continuing.' }, 403);
+  if (!customer || customer.user_id !== user.id) {
+    return json({ error: 'Site not found on your account.' }, 404);
   }
 
   const token = createToken();

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import clsx from 'clsx';
-import { ArrowRight, Menu, MessageCircle, Moon, Sun, X } from 'lucide-react';
+import { ArrowRight, LogOut, Menu, MessageCircle, Moon, Sun, X } from 'lucide-react';
+import { useAuth } from '../lib/auth';
+import { supabase } from '../lib/supabase';
 import { usePortZenStore } from '../store/usePortZenStore';
 
 interface NavbarProps {
@@ -12,6 +14,12 @@ export function Navbar({ whatsappHref }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const theme = usePortZenStore((state) => state.theme);
   const toggleTheme = usePortZenStore((state) => state.toggleTheme);
+  const { session } = useAuth();
+
+  async function logOut() {
+    await supabase.auth.signOut();
+    window.location.href = '/';
+  }
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 16);
@@ -45,7 +53,7 @@ export function Navbar({ whatsappHref }: NavbarProps) {
           <NavLink href="/">Home</NavLink>
           <NavLink href="/templates" target="_blank">Templates</NavLink>
           <NavLink href="/pricing">Pricing</NavLink>
-          <NavLink href="/edit" target="_blank">Edit existing account</NavLink>
+          {session && <NavLink href="/dashboard">Dashboard</NavLink>}
           <button
             type="button"
             onClick={toggleTheme}
@@ -54,15 +62,24 @@ export function Navbar({ whatsappHref }: NavbarProps) {
           >
             {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
           </button>
-          <a
-            href={whatsappHref}
-            target="_blank"
-            rel="noreferrer"
-            className="ml-1 inline-flex items-center gap-2 rounded-[10px] bg-gradient-to-br from-forest to-primary px-5 py-2.5 text-sm font-semibold text-panel shadow-[0_8px_22px_rgba(101,146,135,0.35)] transition hover:brightness-110"
-          >
-            Get Started
-            <ArrowRight size={16} />
-          </a>
+          {session ? (
+            <button
+              type="button"
+              onClick={() => void logOut()}
+              className="ml-1 inline-flex items-center gap-2 rounded-[10px] bg-gradient-to-br from-forest to-primary px-5 py-2.5 text-sm font-semibold text-panel shadow-[0_8px_22px_rgba(101,146,135,0.35)] transition hover:brightness-110"
+            >
+              Log out
+              <LogOut size={16} />
+            </button>
+          ) : (
+            <a
+              href="/login"
+              className="ml-1 inline-flex items-center gap-2 rounded-[10px] bg-gradient-to-br from-forest to-primary px-5 py-2.5 text-sm font-semibold text-panel shadow-[0_8px_22px_rgba(101,146,135,0.35)] transition hover:brightness-110"
+            >
+              Log in
+              <ArrowRight size={16} />
+            </a>
+          )}
         </div>
         <div className="flex items-center gap-2 md:hidden">
           <button
@@ -99,16 +116,28 @@ export function Navbar({ whatsappHref }: NavbarProps) {
           <MobileNavLink href="/" onNavigate={() => setMenuOpen(false)}>Home</MobileNavLink>
           <MobileNavLink href="/templates" target="_blank" onNavigate={() => setMenuOpen(false)}>Templates</MobileNavLink>
           <MobileNavLink href="/pricing" onNavigate={() => setMenuOpen(false)}>Pricing</MobileNavLink>
-          <MobileNavLink href="/edit" target="_blank" onNavigate={() => setMenuOpen(false)}>Edit existing account</MobileNavLink>
-          <a
-            href={whatsappHref}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-2 inline-flex items-center justify-center gap-2 rounded-[10px] bg-gradient-to-br from-forest to-primary px-5 py-3 text-sm font-semibold text-panel shadow-[0_8px_22px_rgba(101,146,135,0.35)] transition hover:brightness-110"
-          >
-            Get Started
-            <ArrowRight size={16} />
-          </a>
+          {session && (
+            <MobileNavLink href="/dashboard" onNavigate={() => setMenuOpen(false)}>Dashboard</MobileNavLink>
+          )}
+          {session ? (
+            <button
+              type="button"
+              onClick={() => { setMenuOpen(false); void logOut(); }}
+              className="mt-2 inline-flex items-center justify-center gap-2 rounded-[10px] bg-gradient-to-br from-forest to-primary px-5 py-3 text-sm font-semibold text-panel shadow-[0_8px_22px_rgba(101,146,135,0.35)] transition hover:brightness-110"
+            >
+              Log out
+              <LogOut size={16} />
+            </button>
+          ) : (
+            <a
+              href="/login"
+              onClick={() => setMenuOpen(false)}
+              className="mt-2 inline-flex items-center justify-center gap-2 rounded-[10px] bg-gradient-to-br from-forest to-primary px-5 py-3 text-sm font-semibold text-panel shadow-[0_8px_22px_rgba(101,146,135,0.35)] transition hover:brightness-110"
+            >
+              Log in
+              <ArrowRight size={16} />
+            </a>
+          )}
         </div>
       )}
     </header>

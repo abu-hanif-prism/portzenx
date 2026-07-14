@@ -21,12 +21,14 @@ function makeToken(): string {
 }
 
 const SUBDOMAIN_RE = /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/;
+const FREE_SITE_LIMIT = 2;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
   const supabaseUrl    = Deno.env.get('SUPABASE_URL')!;
+  const anonKey        = Deno.env.get('SUPABASE_ANON_KEY')!;
   const serviceKey     = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const editSiteUrl    = Deno.env.get('EDIT_SITE_URL')    ?? 'https://edit.portzenx.com';
   const portfolioBase  = Deno.env.get('PORTFOLIO_BASE')   ?? 'portzenx.com';
@@ -34,34 +36,37 @@ Deno.serve(async (req) => {
   const cfZoneId    = Deno.env.get('CF_ZONE_ID');
   const cfOriginIp  = Deno.env.get('CF_ORIGIN_IP') ?? '';
 
+  const authHeader = req.headers.get('Authorization') ?? '';
+  const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
+  const { data: { user }, error: userErr } = await userClient.auth.getUser();
+  if (userErr || !user) return json({ error: 'Please log in before creating a portfolio.' }, 401);
+
   let body: Record<string, unknown>;
   try { body = await req.json(); }
   catch { return json({ error: 'Invalid request body' }, 400); }
 
-  const { name, email, subdomain, templateId } = body as Record<string, string>;
+  const { subdomain, templateId } = body as Record<string, string>;
 
-  if (!name?.trim() || name.trim().length < 2)
-    return json({ error: 'Name is required' }, 400);
-  if (!email?.includes('@'))
-    return json({ error: 'Valid email is required' }, 400);
   if (!subdomain || subdomain.length < 3 || subdomain.length > 30 || !SUBDOMAIN_RE.test(subdomain))
     return json({ error: 'Invalid subdomain' }, 400);
 
   const sb = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
-  // Email must have a verified OTP from the last 30 minutes before we create an account.
-  const normalizedEmail = email.trim().toLowerCase();
-  const { data: otpRow } = await sb
-    .from('signup_otps')
-    .select('verified,created_at')
-    .eq('email', normalizedEmail)
-    .order('created_at', { ascending: false })
-    .limit(1)
+  const { data: profile, error: profileErr } = await sb
+    .from('profiles')
+    .select('name,phone')
+    .eq('id', user.id)
     .maybeSingle();
+  if (profileErr || !profile) return json({ error: 'Please complete your profile before continuing.' }, 403);
 
-  const otpFresh = otpRow?.verified
-    && Date.now() - new Date(otpRow.created_at as string).getTime() < 30 * 60 * 1000;
-  if (!otpFresh) return json({ error: 'Please verify your email before continuing.' }, 403);
+  // Free-tier cap: at most FREE_SITE_LIMIT trial sites per account.
+  const { count: trialCount } = await sb
+    .from('customers')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .eq('plan', 'trial');
+  if (trialCount && trialCount >= FREE_SITE_LIMIT)
+    return json({ error: `You've reached the limit of ${FREE_SITE_LIMIT} free trial sites. Upgrade an existing site or contact us to add more.` }, 403);
 
   // Subdomain uniqueness
   const { count } = await sb
@@ -80,14 +85,15 @@ Deno.serve(async (req) => {
   const { data: customer, error: custErr } = await sb
     .from('customers')
     .insert({
-      name:          name.trim(),
-      email:         email.trim().toLowerCase(),
+      name:          profile.name,
+      email:         user.email,
       subdomain,
       plan:          'trial',
       template_id:   templateId ?? 'photographer-red',
       is_active:     true,
       password_hash: passwordHash,
       expires_at:    expiresAt,
+      user_id:       user.id,
     })
     .select('id')
     .single();

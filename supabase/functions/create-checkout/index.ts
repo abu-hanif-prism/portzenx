@@ -27,6 +27,7 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const anonKey     = Deno.env.get('SUPABASE_ANON_KEY')!;
   const serviceKey  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const siteUrl     = (Deno.env.get('SITE_URL') ?? 'https://portzenx.com').replace(/\/$/, '');
   const storeId     = Deno.env.get('SSLCOMMERZ_STORE_ID');
@@ -37,36 +38,30 @@ Deno.serve(async (req) => {
     return json({ error: 'Payment gateway is not configured yet. Please contact support on WhatsApp instead.' }, 503);
   }
 
+  const authHeader = req.headers.get('Authorization') ?? '';
+  const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
+  const { data: { user }, error: userErr } = await userClient.auth.getUser();
+  if (userErr || !user) return json({ error: 'Please log in before checking out.' }, 401);
+
   let body: Record<string, unknown>;
   try { body = await req.json(); }
   catch { return json({ error: 'Invalid request body' }, 400); }
 
-  const { name, email, subdomain, templateId, plan } = body as Record<string, string>;
+  const { subdomain, templateId, plan } = body as Record<string, string>;
 
-  if (!name?.trim() || name.trim().length < 2)
-    return json({ error: 'Name is required' }, 400);
-  if (!email?.includes('@'))
-    return json({ error: 'Valid email is required' }, 400);
   if (!subdomain || subdomain.length < 3 || subdomain.length > 30 || !SUBDOMAIN_RE.test(subdomain))
     return json({ error: 'Invalid subdomain' }, 400);
   const amount = PLAN_AMOUNT[plan];
   if (!amount) return json({ error: 'Unsupported plan for online checkout' }, 400);
 
   const sb = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
-  const normalizedEmail = email.trim().toLowerCase();
 
-  // Email must have a verified OTP from the last 30 minutes, same as free signup.
-  const { data: otpRow } = await sb
-    .from('signup_otps')
-    .select('verified,created_at')
-    .eq('email', normalizedEmail)
-    .order('created_at', { ascending: false })
-    .limit(1)
+  const { data: profile, error: profileErr } = await sb
+    .from('profiles')
+    .select('name,phone')
+    .eq('id', user.id)
     .maybeSingle();
-
-  const otpFresh = otpRow?.verified
-    && Date.now() - new Date(otpRow.created_at as string).getTime() < 30 * 60 * 1000;
-  if (!otpFresh) return json({ error: 'Please verify your email before continuing.' }, 403);
+  if (profileErr || !profile) return json({ error: 'Please complete your profile before continuing.' }, 403);
 
   const { count } = await sb
     .from('customers')
@@ -82,14 +77,15 @@ Deno.serve(async (req) => {
 
   const { error: orderErr } = await sb.from('orders').insert({
     tran_id:       tranId,
-    name:          name.trim(),
-    email:         normalizedEmail,
+    name:          profile.name,
+    email:         user.email,
     subdomain,
     template_id:   templateId ?? 'photographer-red',
     password_hash: passwordHash,
     plan,
     amount,
     status:        'pending',
+    user_id:       user.id,
   });
   if (orderErr) return json({ error: orderErr.message }, 500);
 
@@ -107,12 +103,12 @@ Deno.serve(async (req) => {
     product_name:    `PortZen ${plan} plan`,
     product_category:'Portfolio hosting',
     product_profile: 'general',
-    cus_name:        name.trim(),
-    cus_email:       normalizedEmail,
+    cus_name:        profile.name,
+    cus_email:       user.email ?? '',
     cus_add1:        'N/A',
     cus_city:        'Dhaka',
     cus_country:     'Bangladesh',
-    cus_phone:       'N/A',
+    cus_phone:       profile.phone,
   });
 
   let gatewayUrl: string;
