@@ -12,6 +12,12 @@ import type { Profile, Template } from '../types';
 
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD ?? 'admin123';
 
+function makeAdminToken(): string {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 // ── Types ────────────────────────────────────────────────────────────────────
 interface Customer {
   id: string;
@@ -197,6 +203,7 @@ function AdminUsers() {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Customer | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [showCreate, setShowCreate] = useState(false);
 
   const { data: customers = [], isLoading, refetch } = useQuery({
     queryKey: ['admin-customers'],
@@ -284,6 +291,14 @@ function AdminUsers() {
           Refresh
         </button>
         <span className="ml-auto text-sm text-forest/45">{filtered.length} customers · {customers.length} sites</span>
+        <button
+          type="button"
+          onClick={() => setShowCreate(true)}
+          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-forest to-primary px-4 py-2.5 text-sm font-semibold text-panel transition hover:brightness-110"
+        >
+          <Plus size={16} />
+          Create Portfolio
+        </button>
       </div>
 
       {isLoading ? (
@@ -377,6 +392,13 @@ function AdminUsers() {
           onChanged={() => void refetch()}
         />
       )}
+
+      {showCreate && (
+        <CreatePortfolioModal
+          onClose={() => setShowCreate(false)}
+          onCreated={() => { setShowCreate(false); void refetch(); }}
+        />
+      )}
     </div>
   );
 }
@@ -395,6 +417,12 @@ function CustomerModal({
   const [editLink, setEditLink] = useState('');
   const [linkError, setLinkError] = useState('');
   const [copied, setCopied] = useState(false);
+
+  const [transferEmail, setTransferEmail] = useState(c.email || '');
+  const [transferring, setTransferring] = useState(false);
+  const [transferLink, setTransferLink] = useState('');
+  const [transferError, setTransferError] = useState('');
+  const [transferCopied, setTransferCopied] = useState(false);
 
   const [plan, setPlan] = useState(c.plan);
   const [expiresAt, setExpiresAt] = useState(c.expires_at ? c.expires_at.slice(0, 10) : '');
@@ -499,23 +527,57 @@ function CustomerModal({
   ];
 
   async function getEditLink() {
+    if (!supabaseAdmin) { setLinkError('Admin client not configured'); return; }
     setLinkLoading(true);
     setLinkError('');
     setEditLink('');
     try {
-      const res = await fetch(`https://${c.subdomain}.portzenx.com/api/edit-link`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requested_by: 'admin' }),
+      const token = makeAdminToken();
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      const { error } = await supabaseAdmin.from('edit_tokens').insert({
+        customer_id: c.id,
+        subdomain: c.subdomain,
+        token,
+        used: false,
+        expires_at: expiresAt,
       });
-      if (!res.ok) throw new Error(`Site responded with ${res.status}`);
-      const data = await res.json() as { url?: string };
-      if (!data.url) throw new Error('No URL returned from customer site');
-      setEditLink(data.url);
+      if (error) throw error;
+      setEditLink(`https://edit.portzenx.com/${token}`);
     } catch (err) {
       setLinkError(err instanceof Error ? err.message : 'Request failed');
     } finally {
       setLinkLoading(false);
+    }
+  }
+
+  async function doTransfer() {
+    if (!supabaseAdmin || !transferEmail.includes('@')) return;
+    setTransferring(true);
+    setTransferError('');
+    setTransferLink('');
+    try {
+      const { error: emailErr } = await supabaseAdmin
+        .from('customers')
+        .update({ email: transferEmail.trim().toLowerCase() })
+        .eq('id', c.id);
+      if (emailErr) throw emailErr;
+
+      const token = makeAdminToken();
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      const { error: tokenErr } = await supabaseAdmin.from('edit_tokens').insert({
+        customer_id: c.id,
+        subdomain: c.subdomain,
+        token,
+        used: false,
+        expires_at: expiresAt,
+      });
+      if (tokenErr) throw tokenErr;
+      setTransferLink(`https://edit.portzenx.com/${token}`);
+      onChanged();
+    } catch (err) {
+      setTransferError(err instanceof Error ? err.message : 'Transfer failed');
+    } finally {
+      setTransferring(false);
     }
   }
 
@@ -656,6 +718,42 @@ function CustomerModal({
         )}
       </div>
 
+      {/* Transfer to customer */}
+      <div className="mt-4 rounded-xl border border-line bg-ink/40 p-4">
+        <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-forest/50">Transfer to Customer</p>
+        <p className="mb-3 text-xs text-forest/55">Set email and generate a 7-day edit link to send to the customer.</p>
+        <div className="flex gap-2">
+          <input
+            type="email"
+            value={transferEmail}
+            onChange={(e) => setTransferEmail(e.target.value)}
+            placeholder="customer@email.com"
+            className="flex-1 min-h-9 rounded-lg border border-line bg-panel px-3 text-sm text-forest outline-none transition placeholder:text-forest/40 focus:border-primary"
+          />
+          <button
+            type="button"
+            onClick={() => void doTransfer()}
+            disabled={transferring || !transferEmail.includes('@')}
+            className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-forest to-primary px-3 py-2 text-xs font-semibold text-panel transition hover:brightness-110 disabled:opacity-60"
+          >
+            {transferring ? '…' : 'Transfer'}
+          </button>
+        </div>
+        {transferError && <p className="mt-2 text-xs text-red-500">{transferError}</p>}
+        {transferLink && (
+          <div className="mt-3 flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/8 px-3 py-2.5">
+            <span className="flex-1 truncate font-mono text-xs text-forest">{transferLink}</span>
+            <button
+              type="button"
+              onClick={() => { navigator.clipboard.writeText(transferLink).then(() => { setTransferCopied(true); setTimeout(() => setTransferCopied(false), 2000); }); }}
+              className="shrink-0 text-forest/50 transition hover:text-forest"
+            >
+              {transferCopied ? <Check size={14} className="text-primary" /> : <Copy size={14} />}
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Danger zone */}
       <div className="mt-5 rounded-xl border border-red-500/25 bg-red-500/5 p-4">
         <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-red-500">
@@ -676,6 +774,141 @@ function CustomerModal({
           {deleting ? 'Deleting…' : 'Delete portfolio'}
         </button>
       </div>
+    </Modal>
+  );
+}
+
+// ── Create Portfolio Modal ────────────────────────────────────────────────────
+function CreatePortfolioModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [form, setForm] = useState({
+    name: '', subdomain: '', templateId: 'photographer-red', email: '', plan: 'trial' as Customer['plan'],
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [result, setResult] = useState<{ editLink: string; siteUrl: string } | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const { data: templates = [] } = useQuery({
+    queryKey: ['admin-templates-for-create'],
+    queryFn: async (): Promise<Template[]> => {
+      if (!supabaseAdmin) return [];
+      const { data, error } = await supabaseAdmin.from('templates').select('id,name').eq('is_active', true).order('name');
+      if (error) throw error;
+      return data as Template[];
+    },
+  });
+
+  async function create() {
+    if (!supabaseAdmin) { setError('Admin client not configured'); return; }
+    if (!form.name.trim()) { setError('Name is required'); return; }
+    const sub = form.subdomain.trim().toLowerCase();
+    if (!sub || sub.length < 3 || sub.length > 30 || !/^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/.test(sub)) {
+      setError('Invalid subdomain (3–30 chars, lowercase letters, numbers, hyphens only)');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      const email = form.email.trim() || `pending-${sub}@portzenx.com`;
+      const { data: customer, error: custErr } = await supabaseAdmin.from('customers').insert({
+        name: form.name.trim(),
+        email,
+        subdomain: sub,
+        plan: form.plan,
+        template_id: form.templateId,
+        is_active: true,
+        password_hash: makeAdminToken(),
+        expires_at: expiresAt,
+        user_id: null,
+      }).select('id').single();
+      if (custErr) throw new Error(custErr.message);
+
+      const { error: contentErr } = await supabaseAdmin.from('portfolio_content').insert({
+        customer_id: customer.id,
+        subdomain: sub,
+        template_id: form.templateId,
+      });
+      if (contentErr) throw new Error(contentErr.message);
+
+      const token = makeAdminToken();
+      const tokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      const { error: tokenErr } = await supabaseAdmin.from('edit_tokens').insert({
+        customer_id: customer.id,
+        subdomain: sub,
+        token,
+        used: false,
+        expires_at: tokenExpiry,
+      });
+      if (tokenErr) throw new Error(tokenErr.message);
+
+      setResult({ editLink: `https://edit.portzenx.com/${token}`, siteUrl: `https://${sub}.portzenx.com` });
+      onCreated();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create portfolio');
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Modal onClose={onClose} width="max-w-md">
+      <div className="mb-5 flex items-center justify-between">
+        <h2 className="font-display text-xl font-bold text-forest">Create Portfolio</h2>
+        <button type="button" onClick={onClose} className="text-forest/40 transition hover:text-forest"><X size={20} /></button>
+      </div>
+
+      {error && (
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">{error}</div>
+      )}
+
+      {result ? (
+        <div className="space-y-4">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-emerald-700">Portfolio created</p>
+            <p className="text-xs text-emerald-600">Use the edit link to fill in content. Transfer to the customer when ready.</p>
+          </div>
+          <div>
+            <p className="mb-1.5 text-xs font-semibold text-forest/50">Edit link (7 days)</p>
+            <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/8 px-3 py-2.5">
+              <span className="flex-1 truncate font-mono text-xs text-forest">{result.editLink}</span>
+              <button type="button" onClick={() => { navigator.clipboard.writeText(result.editLink).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }); }} className="shrink-0 text-forest/50 transition hover:text-forest">
+                {copied ? <Check size={14} className="text-primary" /> : <Copy size={14} />}
+              </button>
+            </div>
+          </div>
+          <div>
+            <p className="mb-1.5 text-xs font-semibold text-forest/50">Portfolio URL</p>
+            <a href={result.siteUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 font-mono text-xs text-primary transition hover:text-forest">
+              {result.siteUrl} <ExternalLink size={12} />
+            </a>
+          </div>
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-700">
+            Remember to add a DNS A record for <strong>{result.siteUrl.replace('https://', '')}</strong> in Cloudflare (proxied, pointing to your Worker origin IP).
+          </div>
+          <button type="button" onClick={onClose} className="w-full min-h-10 rounded-xl border border-line text-sm font-semibold text-forest/70 transition hover:border-primary/70 hover:text-forest">Done</button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <Field label="Customer Name" value={form.name} onChange={(v) => setForm({ ...form, name: v })} placeholder="e.g. Farida Hossain" />
+          <Field label="Subdomain" value={form.subdomain} onChange={(v) => setForm({ ...form, subdomain: v.toLowerCase().replace(/[^a-z0-9-]/g, '') })} placeholder="farida" />
+          <Field label="Customer Email (optional — set before transfer)" value={form.email} onChange={(v) => setForm({ ...form, email: v })} placeholder="customer@email.com" />
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-forest/50">Template</label>
+            <select value={form.templateId} onChange={(e) => setForm({ ...form, templateId: e.target.value })} className="w-full min-h-10 rounded-xl border border-line bg-ink px-4 text-sm text-forest outline-none focus:border-primary">
+              {templates.length > 0 ? templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>) : <option value="photographer-red">photographer-red</option>}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-forest/50">Plan</label>
+            <select value={form.plan} onChange={(e) => setForm({ ...form, plan: e.target.value as Customer['plan'] })} className="w-full min-h-10 rounded-xl border border-line bg-ink px-4 text-sm text-forest outline-none focus:border-primary">
+              {PLAN_OPTIONS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+            </select>
+          </div>
+          <button type="button" onClick={() => void create()} disabled={saving} className="mt-2 w-full min-h-11 rounded-xl bg-gradient-to-br from-forest to-primary text-sm font-semibold text-panel transition hover:brightness-110 disabled:opacity-60">
+            {saving ? 'Creating…' : 'Create Portfolio'}
+          </button>
+        </div>
+      )}
     </Modal>
   );
 }
